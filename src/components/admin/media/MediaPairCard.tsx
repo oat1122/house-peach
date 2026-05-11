@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useConfirm } from '@/components/common/ConfirmProvider';
 import {
   deletePairAction,
   updatePairLabelAction,
 } from '@/lib/actions/media';
+import { toast } from '@/lib/toast';
 
 export type MediaPairCardData = {
   id: number;
@@ -20,6 +22,7 @@ export type MediaPairCardData = {
 
 export function MediaPairCard({ pair }: { pair: MediaPairCardData }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(pair.label);
@@ -27,16 +30,29 @@ export function MediaPairCard({ pair }: { pair: MediaPairCardData }) {
   const handleSave = () => {
     startTransition(async () => {
       await updatePairLabelAction({ id: pair.id, label });
+      toast.success('บันทึกแล้ว', { duration: 1500 });
       setEditing(false);
       router.refresh();
     });
   };
 
-  const handleDelete = () => {
-    if (!confirm('ลบ pair นี้? (รูปทั้ง 2 ใบยังอยู่ใน library)')) return;
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: 'ลบ pair นี้?',
+      description: 'รูปทั้ง 2 ใบยังคงอยู่ใน library — เฉพาะการจับคู่ที่หาย',
+      confirmLabel: 'ลบ pair',
+      cancelLabel: 'ยกเลิก',
+      tone: 'destructive',
+    });
+    if (!ok) return;
     startTransition(async () => {
-      await deletePairAction({ id: pair.id });
-      router.refresh();
+      try {
+        await deletePairAction({ id: pair.id });
+        toast.success('ลบ pair แล้ว');
+        router.refresh();
+      } catch (err) {
+        toast.error((err as Error).message || 'ลบไม่สำเร็จ');
+      }
     });
   };
 

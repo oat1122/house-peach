@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createPairAction } from '@/lib/actions/media';
+import { toast } from '@/lib/toast';
 
 import {
   MediaAssetCard,
@@ -37,6 +38,16 @@ export function MediaLibrary({
   const [pairing, startPairing] = useTransition();
   const [pairError, setPairError] = useState<string | null>(null);
   const [pairLabel, setPairLabel] = useState('');
+  // Controlled search input — Base UI warns if `defaultValue` changes between
+  // renders. Sync with the URL-derived `searchValue` via the official React
+  // pattern (compare-and-set during render) so external nav (back/forward,
+  // clearing search) keeps the input in step.
+  const [searchInput, setSearchInput] = useState(searchValue);
+  const [lastSearchProp, setLastSearchProp] = useState(searchValue);
+  if (lastSearchProp !== searchValue) {
+    setLastSearchProp(searchValue);
+    setSearchInput(searchValue);
+  }
 
   const setQuery = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -72,17 +83,20 @@ export function MediaLibrary({
           afterAssetId,
           label: pairLabel,
         });
+        toast.success('จับคู่ before/after แล้ว');
         setSelectedIds([]);
         setPairLabel('');
         router.refresh();
       } catch (err) {
-        setPairError((err as Error).message);
+        const msg = (err as Error).message;
+        setPairError(msg);
+        toast.error(msg || 'จับคู่ไม่สำเร็จ');
       }
     });
   };
 
   return (
-    <section className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+    <section className="w-full space-y-6 px-4 py-6 lg:px-6 lg:py-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-ink">มีเดีย library</h1>
@@ -103,7 +117,8 @@ export function MediaLibrary({
         {tab === 'pairs' && <input type="hidden" name="tab" value="pairs" />}
         <Input
           name="q"
-          defaultValue={searchValue}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           placeholder="ค้นหา title / alt"
           className="grow"
           aria-label="ค้นหารูป"
@@ -183,7 +198,7 @@ export function MediaLibrary({
           {assets.length === 0 ? (
             <EmptyState message="ยังไม่มีรูปใน library — กดปุ่ม 'อัปโหลดรูป' เพื่อเริ่ม" />
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {assets.map((a) => (
                 <MediaAssetCard
                   key={a.id}
@@ -200,7 +215,7 @@ export function MediaLibrary({
           {pairs.length === 0 ? (
             <EmptyState message="ยังไม่มี pair — เลือกรูป 2 ใบในแท็บ 'ภาพทั้งหมด' แล้วกด 'จับคู่' หรืออัปโหลดในโหมด pair" />
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {pairs.map((p) => (
                 <MediaPairCard key={p.id} pair={p} />
               ))}

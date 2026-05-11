@@ -27,12 +27,18 @@ draft  ──publish──▶  published  ──archive──▶  archived
 
 ## Cover image
 
-- ทุก post + work ต้องมี `coverImageId` ก่อน publish (zod validation)
+- ทุก post + work ต้องมี cover (อ้างผ่าน `coverMediaAssetId` ไป `media_assets`) ก่อน publish (zod validation)
 - รูป cover ใช้สำหรับ:
   - OG image (1200×630 — `next/og` generate รอบ Phase 7, ก่อนหน้านั้นใช้รูปเดิม)
   - card thumbnail ใน listing
   - JSON-LD `image`
-- Aspect ratio แนะนำ 16:10 หรือ 3:2 — ตอน upload ใส่ `aspectHint` ใน metadata
+- Aspect ratio:
+  - **Post cover** — preset `post` (16:10, 1600×1000) เปิดเป็น default ใน MediaUploadDialog
+  - **Work cover** — preset `work` (3:2, 1500×1000)
+  - **Work hero (detail)** — preset `workHero` (2:1, 2000×1000) — ถ้ามีหลายรูปต่อ work ให้ครอปแยกใน work edit form
+  - **Square thumbnail** — preset `square` (1:1, 1080×1080) สำหรับ gallery thumb
+  - **`free`** — upload ดิบไม่ครอป สำหรับรูปที่ออกแบบ aspect มาเองแล้ว
+- Crop เป็น **optional** — admin เลือกได้ที่ MediaUploadDialog (preset dropdown ต่อ row + ปุ่ม "ครอป") ก่อนกด upload. รูปที่ไม่ครอป server resize เป็น 3 variants ตามปกติ — แต่ aspect จะตามต้นฉบับ
 
 ## Tags
 

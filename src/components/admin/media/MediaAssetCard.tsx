@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useConfirm } from '@/components/common/ConfirmProvider';
 import {
   deleteAssetAction,
   updateAssetMetaAction,
 } from '@/lib/actions/media';
+import { toast } from '@/lib/toast';
 
 export type MediaAssetCardData = {
   id: number;
@@ -35,6 +37,7 @@ export function MediaAssetCard({
   onToggleSelect: () => void;
 }) {
   const router = useRouter();
+  const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(asset.title);
@@ -47,23 +50,39 @@ export function MediaAssetCard({
   const handleSave = () => {
     startTransition(async () => {
       await updateAssetMetaAction({ id: asset.id, title, alt });
+      toast.success('บันทึกแล้ว', { duration: 1500 });
       setEditing(false);
       router.refresh();
     });
   };
 
-  const handleDelete = () => {
-    const msg = inPair
+  const handleDelete = async () => {
+    const description = inPair
       ? `รูปนี้อยู่ใน pair · ลบจะลบ pair ด้วย${
           usageCount > 0 ? ` และใช้อยู่ใน ${usageCount} ที่` : ''
-        } — ลบจริงไหม?`
+        }`
       : usageCount > 0
-        ? `รูปนี้ใช้อยู่ใน ${usageCount} ที่ (${asset.postCount} posts, ${asset.workCount} works) — ลบจริงไหม?`
-        : 'ลบรูปนี้?';
-    if (!confirm(msg)) return;
+        ? `รูปนี้ใช้อยู่ใน ${usageCount} ที่ (${asset.postCount} posts, ${asset.workCount} works)`
+        : undefined;
+    // `confirm()` is awaited OUTSIDE the transition so the trigger button
+    // doesn't stay disabled while the modal is open (the modal can take any
+    // amount of time). Only the actual delete call runs inside the transition.
+    const ok = await confirm({
+      title: 'ลบรูปนี้?',
+      description,
+      confirmLabel: 'ลบ',
+      cancelLabel: 'ยกเลิก',
+      tone: 'destructive',
+    });
+    if (!ok) return;
     startTransition(async () => {
-      await deleteAssetAction({ id: asset.id });
-      router.refresh();
+      try {
+        await deleteAssetAction({ id: asset.id });
+        toast.success('ลบรูปแล้ว');
+        router.refresh();
+      } catch (err) {
+        toast.error((err as Error).message || 'ลบไม่สำเร็จ');
+      }
     });
   };
 

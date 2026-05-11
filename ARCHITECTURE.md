@@ -724,9 +724,16 @@ export const labels = {
 ## 13. Image upload pipeline
 
 ```
+admin browser
+  │
+  ├─ (optional) ImageCropDialog — preset 1:1 / 16:10 / 3:2 / 2:1 / free
+  │     - canvas draw → toBlob('image/webp', 0.92) → File (≤5MB)
+  │     - 'free' = skip crop, send original
+  │
 admin POST /api/upload
   │
   ├─ check session.role ∈ {admin, editor}
+  ├─ rate limit 20 req / 5 min / IP
   ├─ parse multipart (max 5MB; reject >5MB before reading full body)
   ├─ file-type sniff magic bytes — allowlist image/jpeg, image/png, image/webp
   ├─ generate uuid → key
@@ -734,9 +741,16 @@ admin POST /api/upload
   │     - original.webp (quality 90)
   │     - 800.webp (longest edge 800)
   │     - 400.webp (longest edge 400)
-  ├─ save to /public/uploads/{posts|works}/<uuid>/
-  └─ insert {post|work}_images row + return path
+  ├─ save to /public/uploads/library/<uuid>/
+  └─ insert media_assets row + return asset
 ```
+
+**Client crop (optional preprocessing):**
+
+- `src/lib/imageCrop/config.ts` — `CROP_PRESETS` (square / post / work / workHero / free)
+- `src/lib/imageCrop/processing.ts` — pure math + canvas draw
+- `src/components/admin/media/ImageCropDialog.tsx` — pointer drag + zoom slider 1×–4×
+- Output `image/webp` quality 0.92 matches server allowlist — server still re-encodes via sharp for variants
 
 **Pluggable interface:**
 

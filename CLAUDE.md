@@ -24,6 +24,8 @@
 @.claude/rules/testing.md
 @.claude/rules/content.md
 @.claude/rules/uxui.md
+@.claude/rules/motion.md
+@.claude/rules/clean-code.md
 
 ---
 
@@ -39,12 +41,21 @@
 
 # Agent team
 
-มี agent definitions ใน `.claude/agents/` รวม 10 ตัว แบ่ง 2 กลุ่ม
+มี agent definitions ใน `.claude/agents/` รวม 12 ตัว แบ่ง 3 กลุ่ม
+
+## Coordination layer
+
+| Agent | Role |
+|---|---|
+| [`mp`](./.claude/agents/mp.md) | **Manager / Project Manager** — รับ task → ตัดสินใจว่าใคร (agent) ทำ + ใช้ skill ไหน + ลำดับงาน. Read-only dispatcher — ไม่เขียนโค้ดเอง |
+
+เรียก `mp` เป็น **ขั้นแรก** เมื่อ task spans หลาย folder / agent หรือไม่ชัดว่าใครควรทำ
 
 ## Implementation team (แก้โค้ด, ทำงานคู่ขนานได้)
 
 | Agent | Owns |
 |---|---|
+| [`designer`](./.claude/agents/designer.md) | `docs/design/*` specs, `src/styles/themes.css` — ผลิต ASCII mockup + component anatomy spec ก่อน fe-* เริ่ม implement |
 | [`fe-public`](./.claude/agents/fe-public.md) | `app/(public)/`, `components/public/`, `components/motion/`, `components/mdx/`, `styles/` |
 | [`fe-admin`](./.claude/agents/fe-admin.md) | `app/(admin)/`, `components/admin/` (CodeMirror MDX editor, ImageUploader) |
 | [`be-data`](./.claude/agents/be-data.md) | `lib/db/`, `lib/services/`, `lib/validation/`, `lib/mdx/`, `scripts/seed*` |
@@ -76,6 +87,7 @@
 | [`add-blog-post`](./.claude/skills/add-blog-post/SKILL.md) | ship a new MDX blog post end-to-end (schema → editor → publish → SEO) |
 | [`add-portfolio-work`](./.claude/skills/add-portfolio-work/SKILL.md) | ship a new portfolio work (gallery composition + JSON-LD CreativeWork) |
 | [`mdx-component-add`](./.claude/skills/mdx-component-add/SKILL.md) | add a new whitelisted MDX render component (security review required) |
+| [`design-mockup`](./.claude/skills/design-mockup/SKILL.md) | produce design spec + ASCII mockup + component breakdown ก่อนเริ่ม implement (designer agent) |
 | [`add-public-screen`](./.claude/skills/add-public-screen/SKILL.md) | create a new public route (RSC + metadata + a11y baseline) |
 | [`add-server-action`](./.claude/skills/add-server-action/SKILL.md) | server action pattern (auth check + zod + tx + revalidateTag) |
 | [`drizzle-add-table`](./.claude/skills/drizzle-add-table/SKILL.md) | add a new MariaDB table (schema + relations + migration + zod + service + test) |
@@ -93,6 +105,7 @@
 | [`seo-page-checklist`](./.claude/skills/seo-page-checklist/SKILL.md) | metadata + JSON-LD (Article / CreativeWork / BreadcrumbList) + sitemap + canonical |
 | [`a11y-review`](./.claude/skills/a11y-review/SKILL.md) | WCAG 2.1 AA self-check + Lighthouse + axe + WAVE |
 | [`perf-audit`](./.claude/skills/perf-audit/SKILL.md) | Lighthouse + bundle analyzer + cache strategy + image audit |
+| [`simplify-reuse`](./.claude/skills/simplify-reuse/SKILL.md) | self-review for duplication / dead code / oversized files / shadcn-replaceable custom UI — run before PR |
 
 ---
 

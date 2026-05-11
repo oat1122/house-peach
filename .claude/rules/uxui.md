@@ -3,9 +3,11 @@
 หลักการ visual + interaction ของ house-peach — เติมส่วนที่ `stack.md` / `accessibility.md` / `seo.md` / `content.md` ยังไม่ได้ระบุ
 
 > **อ่านควบคู่กัน:**
-> - `stack.md` — theme tokens + mobile-first basics + motion budget (high-level)
+> - `stack.md` — theme tokens + mobile-first basics + motion budget + **component sourcing (shadcn first)**
 > - `accessibility.md` — focus, contrast, keyboard, reduced motion
 > - ไฟล์นี้ — design language (typography, spacing, color usage, component anatomy, state types, brand voice)
+
+> **กฎสำคัญก่อนเริ่ม:** ทุก UI ใหม่ตรวจ [shadcn/ui registry](https://ui.shadcn.com/docs/components) ก่อนเขียนเอง — ดู `stack.md` § Component sourcing. Custom UI = ทางเลือกสุดท้าย
 
 ---
 
@@ -280,7 +282,136 @@ Default + focus-visible + disabled ต้องครบ **ทุก interactive
 
 ---
 
-## 11. Density
+## 11. Cursor — interactive signals
+
+Cursor บอก user (สายตา) ว่า element นี้ทำอะไรได้ — เป็น feedback ทางสายตา **ไม่ใช่** สื่อ semantics
+(screen reader ไม่อ่าน cursor; ต้องใช้ semantic HTML + `aria-*` คู่กันเสมอ)
+
+### Principles
+
+1. **ปล่อยให้ semantic element จัดการเอง** — `<button>`, `<a href>`, `<input>` มี cursor ที่ถูกต้องโดย default แล้ว — ห้าม override โดยไม่จำเป็น
+2. **อย่าใส่ `cursor: pointer` กับ `<div>` ที่ไม่ใช่ interactive** — ทำให้ user หลงว่ากดได้
+3. **ใช้ cursor เป็น hint สำหรับ interaction ที่ไม่ชัด** เช่น drag-reorder, zoom, disabled
+4. **Cursor กับ touch device ไม่ทำงาน** — touch ไม่มี hover state — ต้องมี visual cue อื่นเสมอ (border, color shift, label)
+
+### Cursor table — เมื่อไหร่ใช้อันไหน
+
+| Cursor | Tailwind | ใช้กับ | ตัวอย่างใน house-peach |
+|---|---|---|---|
+| `default` | `cursor-default` | text, non-interactive content | body paragraph, hero copy — ปล่อย default ไม่ต้องเซ็ต |
+| `pointer` | `cursor-pointer` | clickable element | `<button>`/`<a>` (auto). ใช้เซ็ตเองเฉพาะ custom interactive element ที่ไม่ได้ใช้ semantic tag (rare) |
+| `text` | `cursor-text` | text input area | `<input>`, `<textarea>` (auto) — รวมถึง CodeMirror MDX editor body |
+| `move` | `cursor-move` | element ลากย้ายได้ทุกทิศ | (เลี่ยง — ใช้ `grab` / `grabbing` ดีกว่าใน drag-drop reorder) |
+| `wait` | `cursor-wait` | ระบบไม่ตอบสนอง — รอ system | (เลี่ยง — ใช้ Skeleton/Spinner ที่ scope เฉพาะส่วนแทนการ block UI ทั้งหน้า) |
+| `progress` | `cursor-progress` | async ทำงานอยู่ + UI ยัง interact ได้ | submit button ตอน `isSubmitting` (เสริม spinner + `disabled`) |
+| `not-allowed` | `cursor-not-allowed` | disabled / forbidden action | disabled button, form field ที่ยังไม่ครบเงื่อนไข (อ่าน §10 — pair กับ `disabled` + `aria-disabled` + opacity-50) |
+| `help` | `cursor-help` | element มีคำอธิบายเพิ่ม (tooltip) | (เลี่ยง — ใช้ shadcn `<Tooltip>` ที่ trigger ด้วย hover/focus แทน — `help` cursor ไม่บอกอะไรกับ touch user) |
+| `grab` | `cursor-grab` | element ลากได้ ยังไม่ลาก | gallery image reorder (admin), drag-handle |
+| `grabbing` | `cursor-grabbing` | กำลังลากอยู่ | active drag state — ปกติเซ็ตด้วย `active:cursor-grabbing` |
+| `zoom-in` | `cursor-zoom-in` | คลิกเพื่อขยาย | work gallery thumbnail (เปิด lightbox), MDX `<Gallery>` items |
+| `zoom-out` | `cursor-zoom-out` | คลิกเพื่อปิด zoom | lightbox overlay (คลิกที่ภาพ = ปิด) |
+
+### Common patterns
+
+#### Disabled button
+
+```tsx
+<button
+  type="submit"
+  disabled={isSubmitting}
+  aria-disabled={isSubmitting}
+  className="
+    inline-flex items-center gap-2 px-5 py-3 rounded-md
+    bg-accent text-bg
+    disabled:opacity-50 disabled:cursor-not-allowed
+    focus-visible:ring-2 focus-visible:ring-accent
+  "
+>
+  ส่ง
+</button>
+```
+
+> ต้องครบ 3 อย่าง: `disabled` (กัน interaction จริง) + `aria-disabled` (screen reader) + `cursor-not-allowed` + opacity (สายตา)
+
+#### Drag-handle (admin gallery reorder)
+
+```tsx
+<button
+  aria-label="ลากเพื่อจัดลำดับ"
+  className="cursor-grab active:cursor-grabbing p-2 text-muted hover:text-ink touch-none"
+  {...dragHandleProps}
+>
+  <GripVertical size={16} aria-hidden />
+</button>
+```
+
+> `touch-none` ปิด default touch gesture (scroll) บน drag handle — สำคัญสำหรับ mobile DnD
+> `cursor-grab` ปกติ → `active:cursor-grabbing` เมื่อกำลังลาก
+
+#### Image lightbox (zoom)
+
+```tsx
+<button
+  type="button"
+  onClick={openLightbox}
+  className="cursor-zoom-in block w-full"
+  aria-label={`ขยายรูป — ${image.alt}`}
+>
+  <Image src={image.path} alt={image.alt} ... />
+</button>
+
+{/* Lightbox overlay */}
+<div
+  role="dialog" aria-modal="true"
+  className="fixed inset-0 bg-ink/90 cursor-zoom-out"
+  onClick={closeLightbox}
+>
+  ...
+</div>
+```
+
+#### Submit pending
+
+```tsx
+<button
+  type="submit"
+  disabled={isSubmitting}
+  className="
+    ... bg-accent text-bg
+    disabled:opacity-70
+    aria-busy:cursor-progress
+  "
+  aria-busy={isSubmitting}
+>
+  {isSubmitting ? <Loader2 className="animate-spin" /> : null}
+  ส่ง
+</button>
+```
+
+> `cursor-progress` บอกว่ายังทำงานอยู่แต่ user อาจคลิกที่อื่นในหน้าได้
+> `cursor-wait` ห้ามใช้ — มันบอกว่าทั้งหน้าค้าง — ผู้ใช้รู้สึกว่า browser ค้าง
+
+#### Custom clickable card (เลี่ยงถ้าได้)
+
+```tsx
+{/* WRONG — div ไม่ใช่ semantic */}
+<div onClick={...} className="cursor-pointer">...</div>
+
+{/* RIGHT — ห่อ <Link> ทั้ง card */}
+<Link href={`/blog/${slug}`} className="block focus-visible:ring-2 focus-visible:ring-accent rounded-md">
+  ...   {/* cursor: pointer มาจาก <a> โดย default */}
+</Link>
+```
+
+### Don'ts
+
+- ห้าม `cursor-pointer` บน element ที่ไม่ interactive จริง — confuses user
+- ห้าม `cursor-wait` บน UI ที่ partial-block — ใช้ Skeleton/Spinner ใน scope แทน
+- ห้าม `cursor-help` แทน tooltip จริง — touch user ไม่เห็น help cursor
+- ห้าม custom cursor image (`cursor: url(...)`) — กลิ่น 2005, performance penalty
+- ห้ามใส่ cursor เป็น **เพียงสัญญาณ** ของ state (disabled, draggable) — ต้องมี visual ที่ไม่ใช่ cursor ด้วย (opacity, icon, border) เพราะ touch user ไม่มี cursor
+
+## 12. Density
 
 | Surface | Density |
 |---|---|
@@ -291,7 +422,7 @@ Default + focus-visible + disabled ต้องครบ **ทุก interactive
 
 ---
 
-## 12. Forms
+## 13. Forms
 
 ### Public form (contact)
 
@@ -308,11 +439,12 @@ Default + focus-visible + disabled ต้องครบ **ทุก interactive
 - Inline validation (debounce 300ms) — แสดง error ทันทีที่ blur
 - Sticky bottom action bar: Save Draft · Publish · Discard
 
-ใช้ shadcn `<Form>` + RHF + zodResolver ทุกฟอร์ม — ห้ามทำเอง
+ใช้ shadcn `<Form>` + RHF + zodResolver ทุกฟอร์ม — ห้ามทำเอง (ดู `stack.md` § Component sourcing)
+ถ้า primitive ที่ต้องการ (Combobox, Calendar, Select, Switch, etc.) ยังไม่อยู่ใน `components/ui/` → install ผ่าน `npx shadcn@latest add <name>` ก่อน ห้ามทำ Radix wrapper ใหม่จาก zero
 
 ---
 
-## 13. Motion — language
+## 14. Motion — language
 
 อ้างอิง `stack.md` "Motion budget" + เพิ่ม specifics:
 
@@ -332,7 +464,7 @@ Default + focus-visible + disabled ต้องครบ **ทุก interactive
 
 ---
 
-## 14. Brand voice (copy)
+## 15. Brand voice (copy)
 
 ภาษาไทยเป็นหลัก — ตึงสั้น อ่อนโยน ไม่อวด
 
@@ -354,7 +486,7 @@ EN copy ใช้ sentence case (ไม่ใช่ Title Case ทุกคำ) 
 
 ---
 
-## 15. Empty/error illustration
+## 16. Empty/error illustration
 
 ห้ามใช้ stock illustration / cartoon — ใช้:
 - ไอคอน lucide-react ขนาดใหญ่ (`size={48}`, `text-muted`)
@@ -370,7 +502,7 @@ EN copy ใช้ sentence case (ไม่ใช่ Title Case ทุกคำ) 
 
 ---
 
-## 16. When in doubt
+## 17. When in doubt
 
 - Visual feels off → switch theme ผ่าน 4 preset ดูว่ายัง balance หรือเปล่า — ถ้าแตกเฉพาะ `ink` (dark) คือ contrast bug
 - Layout feels cramped → เพิ่ม spacing 1 step (4 → 6 → 8)

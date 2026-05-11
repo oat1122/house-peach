@@ -291,3 +291,34 @@ Callers don't change.
 - Don't skip rate limit — upload endpoints are favorite targets
 - Don't commit `public/uploads/` to git — gitignore it (keep `.gitkeep`)
 - Don't resize on every render — variants are pre-generated
+
+---
+
+## Optional client-side crop (preprocessing)
+
+For admin who wants to crop **before** upload — saves bandwidth on tall portrait sources, lets admin frame the image.
+
+**Modules** (in `src/lib/imageCrop/` + `src/components/admin/media/`):
+
+- `config.ts` — `CROP_PRESETS` map (square 1:1 / post 16:10 / work 3:2 / workHero 2:1 / free) + output mime/quality/size constraints
+- `processing.ts` — pure math: `getCropBounds`, `clampCropState`, `getCenteredCropState`, `nextCropStateForZoom`, `createCroppedImageFile` (canvas draw + `toBlob('image/webp', 0.92)`)
+- `ImageCropDialog.tsx` — portal-based modal with pointer-drag canvas + zoom slider 1×–4×. Takes `preset: CropPresetId` prop; resolves target width/height from `CROP_PRESETS` internally. Returns `File` (webp, ≤5MB).
+
+**Integration pattern in `MediaUploadDialog`:**
+
+1. Each row in upload queue has its own `preset: CropPresetId` (default `'post'`)
+2. If preset is an aspect preset (not `'free'`): "ครอป" button opens `<ImageCropDialog>`
+3. On confirm: dialog returns cropped `File` → store in `row.croppedFile` + create blob URL for thumbnail preview
+4. On submit: send `row.croppedFile ?? row.file` to `/api/upload`
+5. Server pipeline runs unchanged — sharp re-encodes whatever bytes arrive into 3 variants
+
+**Blob URL lifecycle (must revoke to avoid memory leak):**
+
+- when admin re-crops (replace `croppedPreviewUrl`)
+- when admin removes the row from queue
+- when admin changes preset (different aspect invalidates the crop)
+- on `MediaUploadDialog` unmount
+
+**GIF handling:** `MediaUploadDialog.addFiles` checks `file.type` against `CROPPABLE_IMAGE_MIME`. Non-matches (gif, avif, etc.) land with `status: 'rejected'` and don't go to the server — the allowlist there is jpeg/png/webp only.
+
+**Why not server-side crop?** Cropping client-side means the admin sees exactly what they'll get + the bytes sent already match the desired aspect. Server-side crop would need round-trips for preview. Server still controls **variant resizing** (3 widths) regardless.

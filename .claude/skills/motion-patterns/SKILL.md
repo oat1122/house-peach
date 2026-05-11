@@ -1,11 +1,13 @@
 ---
 name: motion-patterns
-description: Templates for motion in house-peach — FadeUp/Stagger wrappers, SlideUpSheet, image swap, reduced-motion enforcement, page transition. Use this skill when adding any animation to a component or screen, or when reviewing existing motion for performance/a11y compliance. Trigger on phrases like "animate the section", "fade in", "stagger children", "motion budget", "reduced motion", "page transition", "scroll-triggered animation".
+description: Templates for motion in house-peach — FadeUp/Stagger wrappers, SlideUpSheet, image swap, gestures (hover/tap/drag), layout animations, scroll-linked progress, useAnimate hook, reduced-motion enforcement, page transition. Use this skill when adding any animation to a component or screen, or when reviewing existing motion for performance/a11y compliance. Trigger on phrases like "animate the section", "fade in", "stagger children", "motion budget", "reduced motion", "page transition", "scroll-triggered animation", "drag handle", "layout animation", "hover lift".
 ---
 
 # Motion patterns
 
-This skill is the playbook for `motion/react` in house-peach. Every animation must be:
+This skill is the playbook for `motion/react` (https://motion.dev/docs) in house-peach. Pairs with [`.claude/rules/motion.md`](../../rules/motion.md) — read that first for invariants.
+
+Every animation must be:
 1. **purposeful** — communicates state change, not decorative noise
 2. **fast** — ≤ 0.5s
 3. **reduced-motion-safe** — respects `prefers-reduced-motion`
@@ -227,6 +229,174 @@ export function FadeSwap({ src, alt, className }: { src: string; alt: string; cl
 ```
 
 Use case: WorkGallery thumbnail click → swap hero image
+
+---
+
+## Gesture patterns (motion.dev/docs/react-gestures)
+
+### `whileHover` + `whileTap` — card lift / button press
+
+**Rule:** ถ้า hover effect เป็น `translate` หรือ `scale` ตรง ๆ → Tailwind class ดีกว่า (`hover:-translate-y-0.5`) — ใช้ motion เฉพาะเมื่อต้อง spring physics หรือ orchestrate กับ children
+
+```tsx
+'use client';
+import { motion, useReducedMotion } from 'motion/react';
+
+export function HoverLiftCard({ children }: { children: React.ReactNode }) {
+  const reduce = useReducedMotion();
+  if (reduce) return <div>{children}</div>;
+  return (
+    <motion.div
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      className="rounded-md bg-card border border-line"
+    >
+      {children}
+    </motion.div>
+  );
+}
+```
+
+**Touch-aware**: `whileHover` ไม่ trigger บน touch device — ใช้ `whileTap` สำหรับ touch feedback
+
+### `drag` — admin gallery reorder handle
+
+```tsx
+'use client';
+import { motion, useReducedMotion } from 'motion/react';
+
+export function DragHandle({ children, onDragEnd }) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      drag="y"
+      dragConstraints={{ top: 0, bottom: 0 }}
+      dragElastic={0.2}
+      whileDrag={reduce ? {} : { scale: 1.02, cursor: 'grabbing' }}
+      onDragEnd={onDragEnd}
+      className="cursor-grab active:cursor-grabbing touch-none"
+    >
+      {children}
+    </motion.div>
+  );
+}
+```
+
+> Pair with Radix `@radix-ui/react-*` for keyboard reorder a11y — drag alone is **not** a11y-compliant
+> ดู `uxui.md` § 11 "Drag-handle" pattern (มี `aria-label` + keyboard fallback)
+
+---
+
+## Layout animations (motion.dev/docs/react-layout-animations)
+
+ใช้ `layout` prop เพื่อ animate การเปลี่ยน position/size แบบ **อัตโนมัติ** — motion วัด DOM ก่อน/หลัง แล้ว animate ระหว่าง
+
+### `layout` — accordion expand, filter chip toggle
+
+```tsx
+'use client';
+import { motion, useReducedMotion } from 'motion/react';
+
+export function ExpandableCard({ expanded, children }) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      layout={!reduce}
+      transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 30 }}
+      className="rounded-md bg-card border border-line p-4"
+    >
+      {children}
+    </motion.div>
+  );
+}
+```
+
+### `layoutId` — shared element transition (rare, expensive)
+
+ใช้สำหรับ "magic move" ระหว่าง 2 components (e.g., card → detail page). ระวัง: ต้อง mount/unmount พร้อมกัน + ทำงานเฉพาะใน `<AnimatePresence>`
+
+```tsx
+// list page
+<motion.img layoutId={`cover-${post.id}`} src={post.cover} />
+
+// detail page (only if both mount simultaneously — rare in Next router)
+<motion.img layoutId={`cover-${post.id}`} src={post.cover} />
+```
+
+> **Caution:** Next App Router unmount ทั้ง tree ตอน route change — `layoutId` ใช้ได้เฉพาะ in-page transitions, ไม่ใช่ cross-page
+
+---
+
+## Scroll-linked animation (motion.dev/docs/react-scroll-animations)
+
+### `useScroll` + `useTransform` — progress bar / parallax
+
+```tsx
+'use client';
+import { motion, useScroll, useTransform, useReducedMotion } from 'motion/react';
+
+export function ReadingProgress() {
+  const { scrollYProgress } = useScroll();
+  const reduce = useReducedMotion();
+  const scaleX = useTransform(scrollYProgress, [0, 1], [0, 1]);
+
+  if (reduce) return null;
+  return (
+    <motion.div
+      style={{ scaleX, transformOrigin: 'left' }}
+      className="fixed top-0 inset-x-0 h-0.5 bg-accent z-50"
+    />
+  );
+}
+```
+
+**Use sparingly** — scroll-linked = listener every frame, drains battery บน mobile. เลือกใช้บน hero parallax / reading progress เท่านั้น ไม่ใส่ทั่วทุก section
+
+### `whileInView` (preferred for most cases)
+
+ดู `<FadeUp>` ด้านบน — `whileInView` + `once: true` ใช้ IntersectionObserver (cheap), trigger ครั้งเดียว
+
+---
+
+## `useAnimate` — imperative API (motion.dev/docs/react-use-animate)
+
+ใช้เมื่อ animation **ไม่** map กับ component state เช่น sequence ที่ trigger จาก callback
+
+```tsx
+'use client';
+import { useAnimate, useReducedMotion } from 'motion/react';
+
+export function ShakeButton({ children, onError }) {
+  const [scope, animate] = useAnimate();
+  const reduce = useReducedMotion();
+
+  async function handleError() {
+    if (reduce) { onError(); return; }
+    await animate(scope.current, { x: [0, -6, 6, -4, 4, 0] }, { duration: 0.3 });
+    onError();
+  }
+
+  return <button ref={scope} onClick={handleError}>{children}</button>;
+}
+```
+
+ใช้กับ: error shake, success checkmark draw, focus pulse
+
+---
+
+## Spring vs tween — เลือกอันไหน
+
+| Animation | Use | Config |
+|---|---|---|
+| Section enter, fade | `tween` ease-out | `{ duration: 0.35, ease: 'easeOut' }` |
+| Image swap | `tween` linear (short) | `{ duration: 0.2 }` |
+| Sheet open, modal | `spring` stiff | `{ type: 'spring', stiffness: 350, damping: 30 }` |
+| Hover lift, tap | `spring` bouncy | `{ type: 'spring', stiffness: 400, damping: 25 }` |
+| Badge pop, count change | `spring` snappy | `{ type: 'spring', stiffness: 500, damping: 15 }` |
+| Drag end snap | `spring` natural | default (`type: 'spring'`) |
+
+> rule of thumb: physical objects (sheet, badge, drag) = spring. abstract transitions (fade, slide) = tween
 
 ---
 
