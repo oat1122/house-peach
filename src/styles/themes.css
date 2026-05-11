@@ -1,0 +1,45 @@
+/* Brand theme presets — coexist with shadcn neutral palette.
+ * Use these tokens for brand-styled sections (hero, cards, accents).
+ * shadcn primitives keep their own tokens defined in app/globals.css.
+ */
+
+:root,
+[data-theme="peach"] {
+  --bg: #faeee2;
+  --bg2: #f3dccc;
+  --brand-card: #ffffff;
+  --ink: #2a1f17;
+  --muted-brand: #8c7768;
+  --line: #e8d4c2;
+  --brand-accent: #c97c5e;
+}
+
+[data-theme="cream"] {
+  --bg: #f3ebde;
+  --bg2: #ebe1d0;
+  --brand-card: #faf5ec;
+  --ink: #1a1612;
+  --muted-brand: #8a7e6f;
+  --line: #d8cdb9;
+  --brand-accent: #a87856;
+}
+
+[data-theme="sage"] {
+  --bg: #e8ede1;
+  --bg2: #d8e0cd;
+  --brand-card: #f3f7ed;
+  --ink: #1c2018;
+  --muted-brand: #7d8a73;
+  --line: #c7d2bb;
+  --brand-accent: #5e7e5a;
+}
+
+[data-theme="ink"] {
+  --bg: #1c1812;
+  --bg2: #27201a;
+  --brand-card: #2c2520;
+  --ink: #f5ecdc;
+  --muted-brand: #a8998a;
+  --line: #3a322a;
+  --brand-accent: #e0a07e;
+}
