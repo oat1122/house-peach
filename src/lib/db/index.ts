@@ -24,3 +24,5 @@ if (env.NODE_ENV !== 'production') {
 
 export const db = drizzle(pool, { mode: 'default' });
 export type Database = typeof db;
+
+export { pool };

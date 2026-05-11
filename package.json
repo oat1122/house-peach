@@ -14,8 +14,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx scripts/seed.ts",
-    "admin:create": "tsx scripts/create-admin.ts"
+    "db:seed": "tsx --conditions=react-server scripts/seed.ts",
+    "admin:create": "tsx --conditions=react-server scripts/create-admin.ts",
+    "generate:auth-secret": "node -e \"console.log('AUTH_SECRET=\\\"' + require('crypto').randomBytes(32).toString('base64') + '\\\"')\""
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",
