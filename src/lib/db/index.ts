@@ -3,6 +3,8 @@ import { drizzle } from 'drizzle-orm/mysql2';
 import mysql from 'mysql2/promise';
 
 import { env } from '@/env';
+import * as schema from './schema';
+import * as relations from './relations';
 
 declare global {
   var __mysqlPool: mysql.Pool | undefined;
@@ -22,7 +24,10 @@ if (env.NODE_ENV !== 'production') {
   globalThis.__mysqlPool = pool;
 }
 
-export const db = drizzle(pool, { mode: 'default' });
+export const db = drizzle(pool, {
+  mode: 'default',
+  schema: { ...schema, ...relations },
+});
 export type Database = typeof db;
 
 export { pool };

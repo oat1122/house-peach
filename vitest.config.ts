@@ -14,6 +14,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // Stub out the runtime guard so tests can import server-only modules.
+      'server-only': path.resolve(__dirname, './vitest.server-only.ts'),
     },
   },
 });

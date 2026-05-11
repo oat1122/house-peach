@@ -23,6 +23,7 @@
 @.claude/rules/i18n.md
 @.claude/rules/testing.md
 @.claude/rules/content.md
+@.claude/rules/uxui.md
 
 ---
 
@@ -66,7 +67,7 @@
 
 # Project skills
 
-มี 12 skills ใน `.claude/skills/` — เรียกใช้เมื่อ task match keyword ใน `description` ของ SKILL.md
+มี 15 skills ใน `.claude/skills/` — เรียกใช้เมื่อ task match keyword ใน `description` ของ SKILL.md
 
 ## Implementation skills
 
@@ -81,6 +82,9 @@
 | [`shared-zod-schema`](./.claude/skills/shared-zod-schema/SKILL.md) | zod conventions (Insert/Update/Select/Public, brand types, TH error messages) |
 | [`image-upload-pipeline`](./.claude/skills/image-upload-pipeline/SKILL.md) | sharp + 3 webp variants + pluggable `ImageStore` interface |
 | [`shadcn-add-component`](./.claude/skills/shadcn-add-component/SKILL.md) | install + theme-tokens integration (test on all 4 presets) |
+| [`component-anatomy`](./.claude/skills/component-anatomy/SKILL.md) | copy-paste templates for Hero / PostCard / WorkCard / Listing / Detail / Header / Footer / ContactForm |
+| [`page-states`](./.claude/skills/page-states/SKILL.md) | loading (Skeleton) / empty (EmptyState) / error (`error.tsx` + `not-found.tsx`) / success (toast) templates |
+| [`motion-patterns`](./.claude/skills/motion-patterns/SKILL.md) | `<FadeUp>` / `<Stagger>` / `<SlideUpSheet>` / `<FadeSwap>` wrappers + reduced-motion enforcement |
 
 ## Review skills
 

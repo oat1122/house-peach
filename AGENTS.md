@@ -22,7 +22,7 @@ This version (**Next.js 16**) has breaking changes — APIs, conventions, and fi
 
 1. `CLAUDE.md` — root index ของ project rules + agent + skill (มี `@`-references ลง `.claude/rules/*` ทั้งหมด)
 2. `ARCHITECTURE.md` — โครงสถาปัตยกรรม + data model + library checklist
-3. `.claude/rules/<หัวข้อ>.md` — invariants per topic (stack, db, validation, security, seo, a11y, i18n, testing, content)
+3. `.claude/rules/<หัวข้อ>.md` — invariants per topic (stack, folder-structure, db, validation, security, seo, a11y, i18n, testing, content, **uxui**)
 
 ถ้าจะ spawn agent team อ่าน `.claude/agents/<agent>.md` แต่ละตัวก่อน — มี ownership map ว่าใครแก้ folder ไหนได้บ้าง (`.claude/rules/folder-structure.md` § Ownership)
 
