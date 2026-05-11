@@ -56,73 +56,77 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Warm minimal palette — light mode.
+ * Reference: home_decor_minimal_palette.html (MAISON light) */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --background: #faf7f2;
+  --foreground: #1c1a17;
+  --card: #ffffff;
+  --card-foreground: #1c1a17;
+  --popover: #ffffff;
+  --popover-foreground: #1c1a17;
+  --primary: #1c1a17;
+  --primary-foreground: #faf7f2;
+  --secondary: #f3ede3;
+  --secondary-foreground: #1c1a17;
+  --muted: #f3ede3;
+  --muted-foreground: #6b6560;
+  --accent: #b89b7a;
+  --accent-foreground: #1c1a17;
+  --destructive: #b04a3b;
+  --border: #e8e2d8;
+  --input: #e8e2d8;
+  --ring: #b89b7a;
+  --chart-1: #b89b7a;
+  --chart-2: #6b6560;
+  --chart-3: #8a7e6d;
+  --chart-4: #d8c9b3;
+  --chart-5: #3a3530;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #faf7f2;
+  --sidebar-foreground: #1c1a17;
+  --sidebar-primary: #1c1a17;
+  --sidebar-primary-foreground: #faf7f2;
+  --sidebar-accent: #f3ede3;
+  --sidebar-accent-foreground: #1c1a17;
+  --sidebar-border: #e8e2d8;
+  --sidebar-ring: #b89b7a;
 }
 
+/* Warm minimal palette — dark mode.
+ * Reference: home_decor_minimal_palette.html (MAISON dark) */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #1a1714;
+  --foreground: #f5f0e8;
+  --card: #252220;
+  --card-foreground: #f5f0e8;
+  --popover: #252220;
+  --popover-foreground: #f5f0e8;
+  --primary: #f5f0e8;
+  --primary-foreground: #1a1714;
+  --secondary: #2f2a26;
+  --secondary-foreground: #f5f0e8;
+  --muted: #2f2a26;
+  --muted-foreground: #a8a29a;
+  --accent: #c4a47c;
+  --accent-foreground: #1a1714;
+  --destructive: #c96655;
+  --border: #3a3530;
+  --input: #3a3530;
+  --ring: #c4a47c;
+  --chart-1: #c4a47c;
+  --chart-2: #a8a29a;
+  --chart-3: #8a7e6d;
+  --chart-4: #4a4540;
+  --chart-5: #d8c9b3;
+  --sidebar: #1a1714;
+  --sidebar-foreground: #f5f0e8;
+  --sidebar-primary: #f5f0e8;
+  --sidebar-primary-foreground: #1a1714;
+  --sidebar-accent: #2f2a26;
+  --sidebar-accent-foreground: #f5f0e8;
+  --sidebar-border: #3a3530;
+  --sidebar-ring: #c4a47c;
 }
 
 @layer base {
@@ -134,5 +138,21 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* Vestibular-safe fallback for Tailwind/shadcn animations (data-state
+ * transitions, animate-pulse, animate-spin). motion/react components also
+ * read `prefers-reduced-motion` via `useReducedMotion()` — this CSS layer
+ * is the belt-and-suspenders catch-all for any animation that isn't
+ * gated explicitly in JS. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

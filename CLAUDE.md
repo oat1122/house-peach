@@ -25,6 +25,7 @@
 @.claude/rules/content.md
 @.claude/rules/uxui.md
 @.claude/rules/motion.md
+@.claude/rules/loading-states.md
 @.claude/rules/clean-code.md
 
 ---

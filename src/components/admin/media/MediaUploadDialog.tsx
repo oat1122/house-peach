@@ -7,6 +7,7 @@ import { Crop } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { createPairAction } from '@/lib/actions/media';
 import {
   CROP_PRESETS,
@@ -304,8 +305,21 @@ export function MediaUploadDialog({ onClose }: { onClose: () => void }) {
             <Button variant="ghost" onClick={onClose} disabled={submitting}>
               ปิด
             </Button>
-            <Button onClick={handleSubmit} disabled={submitDisabled}>
-              {submitting ? 'กำลังอัปโหลด…' : pairMode ? 'อัปโหลด + จับคู่' : 'อัปโหลด'}
+            <Button
+              onClick={handleSubmit}
+              disabled={submitDisabled}
+              aria-busy={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Spinner className="size-4" />
+                  <span>กำลังอัปโหลด…</span>
+                </>
+              ) : pairMode ? (
+                'อัปโหลด + จับคู่'
+              ) : (
+                'อัปโหลด'
+              )}
             </Button>
           </footer>
         </div>
@@ -492,7 +506,12 @@ function StatusBadge({
 }) {
   if (status === 'done') return <span className="text-brand-accent">✓ เสร็จ</span>;
   if (status === 'uploading')
-    return <span className="text-muted-brand">⟳ กำลังอัปโหลด…</span>;
+    return (
+      <span className="inline-flex items-center gap-1 text-muted-brand">
+        <Spinner className="size-3" />
+        <span>กำลังอัปโหลด…</span>
+      </span>
+    );
   if (status === 'error')
     return <span className="text-destructive">✗ {error ?? 'อัปโหลดล้มเหลว'}</span>;
   if (status === 'rejected')

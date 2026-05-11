@@ -38,7 +38,7 @@ export const WorkInsert = z.object({
   location: z.string().max(120).nullable().optional(),
   areaSqm: z.coerce.number().positive().max(99999.99).nullable().optional(),
   budgetRange: z.enum(budgetRanges).nullable().optional(),
-  coverImageId: z.coerce.number().int().positive().nullable().default(null),
+  coverMediaAssetId: z.coerce.number().int().positive().nullable().default(null),
   tone: HexColor.default('#f5d6c0' as never),
   accent: HexColor.default('#a87856' as never),
   tagIds: z.array(z.coerce.number().int().positive()).default([]),

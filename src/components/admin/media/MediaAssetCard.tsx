@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { useConfirm } from '@/components/common/ConfirmProvider';
 import {
   deleteAssetAction,
@@ -31,10 +32,12 @@ export function MediaAssetCard({
   asset,
   selected,
   onToggleSelect,
+  priority = false,
 }: {
   asset: MediaAssetCardData;
   selected: boolean;
   onToggleSelect: () => void;
+  priority?: boolean;
 }) {
   const router = useRouter();
   const confirm = useConfirm();
@@ -116,6 +119,7 @@ export function MediaAssetCard({
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className="object-cover"
+          priority={priority}
           unoptimized
         />
       </div>
@@ -188,9 +192,17 @@ export function MediaAssetCard({
             variant="destructive"
             onClick={handleDelete}
             disabled={pending}
+            aria-busy={pending}
             className="w-full"
           >
-            ลบ
+            {pending ? (
+              <>
+                <Spinner className="size-3" />
+                <span>กำลังลบ…</span>
+              </>
+            ) : (
+              'ลบ'
+            )}
           </Button>
         )}
       </div>

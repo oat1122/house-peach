@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { useConfirm } from '@/components/common/ConfirmProvider';
 import {
   deletePairAction,
@@ -20,7 +21,13 @@ export type MediaPairCardData = {
   after: { path: string; alt: string };
 };
 
-export function MediaPairCard({ pair }: { pair: MediaPairCardData }) {
+export function MediaPairCard({
+  pair,
+  priority = false,
+}: {
+  pair: MediaPairCardData;
+  priority?: boolean;
+}) {
   const router = useRouter();
   const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
@@ -59,8 +66,8 @@ export function MediaPairCard({ pair }: { pair: MediaPairCardData }) {
   return (
     <li className="overflow-hidden rounded-xl border border-line bg-brand-card">
       <div className="grid grid-cols-2 gap-px bg-line">
-        <PairThumb side="before" path={pair.before.path} alt={pair.before.alt} />
-        <PairThumb side="after" path={pair.after.path} alt={pair.after.alt} />
+        <PairThumb side="before" path={pair.before.path} alt={pair.before.alt} priority={priority} />
+        <PairThumb side="after" path={pair.after.path} alt={pair.after.alt} priority={priority} />
       </div>
       <div className="space-y-2 p-3">
         {editing ? (
@@ -103,9 +110,17 @@ export function MediaPairCard({ pair }: { pair: MediaPairCardData }) {
           variant="destructive"
           onClick={handleDelete}
           disabled={pending}
+          aria-busy={pending}
           className="w-full"
         >
-          ลบ pair
+          {pending ? (
+            <>
+              <Spinner className="size-3" />
+              <span>กำลังลบ…</span>
+            </>
+          ) : (
+            'ลบ pair'
+          )}
         </Button>
       </div>
     </li>
@@ -116,14 +131,24 @@ function PairThumb({
   side,
   path,
   alt,
+  priority = false,
 }: {
   side: 'before' | 'after';
   path: string;
   alt: string;
+  priority?: boolean;
 }) {
   return (
     <div className="relative aspect-[4/3] bg-bg2">
-      <Image src={path} alt={alt} fill sizes="33vw" className="object-cover" unoptimized />
+      <Image
+        src={path}
+        alt={alt}
+        fill
+        sizes="33vw"
+        className="object-cover"
+        priority={priority}
+        unoptimized
+      />
       <span className="absolute left-1.5 top-1.5 rounded bg-ink/85 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-bg">
         {side}
       </span>

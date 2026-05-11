@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
@@ -60,7 +61,10 @@ export function AdminTopbar({ children }: { children?: React.ReactNode }) {
           ))}
         </ol>
       </nav>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      <div className="flex items-center gap-1">
+        {children}
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

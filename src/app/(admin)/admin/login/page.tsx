@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 
 import { auth } from '@/lib/auth';
 import { LoginForm } from '@/components/admin/LoginForm';
+import { FadeUp } from '@/components/motion/FadeUp';
 
 export const metadata: Metadata = {
   title: 'เข้าสู่ระบบ — house-peach',
@@ -15,15 +16,17 @@ export default async function AdminLoginPage() {
 
   return (
     <main className="flex min-h-svh items-center justify-center bg-bg px-4 py-12">
-      <div className="w-full max-w-sm rounded-2xl bg-brand-card p-6 shadow-sm ring-1 ring-line">
-        <header className="mb-6 space-y-1">
-          <h1 className="text-xl font-semibold text-ink">เข้าสู่ระบบผู้ดูแล</h1>
-          <p className="text-sm text-muted-brand">
-            สำหรับทีม house-peach เท่านั้น
-          </p>
-        </header>
-        <LoginForm />
-      </div>
+      <FadeUp immediate className="w-full max-w-sm">
+        <div className="rounded-2xl bg-brand-card p-6 shadow-sm ring-1 ring-line">
+          <header className="mb-6 space-y-1">
+            <h1 className="text-xl font-semibold text-ink">เข้าสู่ระบบผู้ดูแล</h1>
+            <p className="text-sm text-muted-brand">
+              สำหรับทีม house-peach เท่านั้น
+            </p>
+          </header>
+          <LoginForm />
+        </div>
+      </FadeUp>
     </main>
   );
 }

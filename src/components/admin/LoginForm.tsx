@@ -7,6 +7,7 @@ import { useTransition, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import { signInWithCredentials } from '@/lib/actions/auth';
 import { SignInInput } from '@/lib/validation/auth';
 
@@ -73,8 +74,21 @@ export function LoginForm() {
         </p>
       )}
 
-      <Button type="submit" className="w-full" disabled={pending} size="lg">
-        {pending ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ'}
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={pending}
+        aria-busy={pending}
+        size="lg"
+      >
+        {pending ? (
+          <>
+            <Spinner className="size-4" />
+            <span>กำลังเข้าสู่ระบบ…</span>
+          </>
+        ) : (
+          'เข้าสู่ระบบ'
+        )}
       </Button>
     </form>
   );

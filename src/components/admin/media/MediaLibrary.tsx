@@ -2,9 +2,17 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Search, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/components/ui/input-group';
+import { Spinner } from '@/components/ui/spinner';
 import { createPairAction } from '@/lib/actions/media';
 import { toast } from '@/lib/toast';
 
@@ -109,32 +117,38 @@ export function MediaLibrary({
         </Button>
       </header>
 
-      <form
-        className="flex flex-wrap gap-3"
-        action="/admin/media"
-        method="get"
-      >
+      <form action="/admin/media" method="get" className="max-w-xl">
         {tab === 'pairs' && <input type="hidden" name="tab" value="pairs" />}
-        <Input
-          name="q"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="ค้นหา title / alt"
-          className="grow"
-          aria-label="ค้นหารูป"
-        />
-        <Button type="submit" variant="outline">
-          ค้นหา
-        </Button>
-        {searchValue && (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setQuery({ q: null })}
-          >
-            ล้าง
-          </Button>
-        )}
+        <InputGroup>
+          <InputGroupAddon align="inline-start">
+            <Search aria-hidden />
+          </InputGroupAddon>
+          <InputGroupInput
+            name="q"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="ค้นหา title / alt"
+            aria-label="ค้นหารูป"
+          />
+          {searchValue && (
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => setQuery({ q: null })}
+                aria-label="ล้างคำค้น"
+              >
+                <X />
+              </InputGroupButton>
+            </InputGroupAddon>
+          )}
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton type="submit" variant="default">
+              ค้นหา
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
       </form>
 
       <nav className="flex gap-1 border-b border-line" aria-label="หมวดหมู่ library">
@@ -171,8 +185,16 @@ export function MediaLibrary({
                 size="sm"
                 onClick={createPair}
                 disabled={selectedIds.length !== 2 || pairing}
+                aria-busy={pairing}
               >
-                {pairing ? 'กำลังจับคู่…' : 'จับคู่ before/after'}
+                {pairing ? (
+                  <>
+                    <Spinner className="size-3.5" />
+                    <span>กำลังจับคู่…</span>
+                  </>
+                ) : (
+                  'จับคู่ before/after'
+                )}
               </Button>
               <Button
                 size="sm"
@@ -199,12 +221,13 @@ export function MediaLibrary({
             <EmptyState message="ยังไม่มีรูปใน library — กดปุ่ม 'อัปโหลดรูป' เพื่อเริ่ม" />
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-              {assets.map((a) => (
+              {assets.map((a, i) => (
                 <MediaAssetCard
                   key={a.id}
                   asset={a}
                   selected={selectedIds.includes(a.id)}
                   onToggleSelect={() => toggleSelect(a.id)}
+                  priority={i === 0}
                 />
               ))}
             </ul>
@@ -216,8 +239,8 @@ export function MediaLibrary({
             <EmptyState message="ยังไม่มี pair — เลือกรูป 2 ใบในแท็บ 'ภาพทั้งหมด' แล้วกด 'จับคู่' หรืออัปโหลดในโหมด pair" />
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-              {pairs.map((p) => (
-                <MediaPairCard key={p.id} pair={p} />
+              {pairs.map((p, i) => (
+                <MediaPairCard key={p.id} pair={p} priority={i === 0} />
               ))}
             </ul>
           )}
