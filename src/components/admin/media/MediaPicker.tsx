@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -95,12 +96,16 @@ export function MediaPicker({
         ? 'เลือกได้หลายรูป — กด "เพิ่ม" เพื่อ attach'
         : 'เลือก 1 รูป';
 
-  return (
+  // Portal to document.body so the dialog escapes any stacking context that a
+  // parent might create — the sticky aside in /admin/works/[id]/edit (slotRight)
+  // creates one, which was clipping the picker behind AdminTopbar + bottom bar.
+  if (typeof document === 'undefined') return null;
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/40 p-4"
     >
       <div className="flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-card shadow-xl">
         <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-3">
@@ -184,7 +189,8 @@ export function MediaPicker({
           </footer>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

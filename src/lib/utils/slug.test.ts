@@ -20,7 +20,18 @@ describe('slugify', () => {
     expect(slugify('')).toBe('untitled');
   });
 
-  it('drops Thai characters since slugs are ASCII-only', () => {
-    expect(slugify('บ้าน peach studio')).toBe('peach-studio');
+  it('keeps Thai characters and dashes spaces', () => {
+    expect(slugify('บ้าน peach studio')).toBe('บ้าน-peach-studio');
+  });
+
+  it('strips Latin diacritics but keeps Thai vowel marks', () => {
+    // "Café à Bangkok" → diacritics stripped; "ห้องนั่งเล่น" — Thai vowel/tone
+    // marks live inside the Thai block so they survive.
+    expect(slugify('Café à Bangkok')).toBe('cafe-a-bangkok');
+    expect(slugify('ห้องนั่งเล่น')).toBe('ห้องนั่งเล่น');
+  });
+
+  it('collapses mixed Thai + ASCII gaps into single dashes', () => {
+    expect(slugify('แต่งห้อง!! Japandi style')).toBe('แต่งห้อง-japandi-style');
   });
 });

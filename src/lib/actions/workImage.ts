@@ -7,6 +7,7 @@ import {
   removeWorkImage,
   reorderWorkImages,
   setWorkCover,
+  setWorkImageFeatured,
   updateWorkImageCaption,
   updateWorkImageKind,
 } from '@/lib/services/workImage';
@@ -16,6 +17,7 @@ import {
   ReorderInput,
   RemoveInput,
   SetCoverInput,
+  SetFeaturedInput,
   UpdateCaptionInput,
   UpdateKindInput,
 } from '@/lib/validation/workImage';
@@ -101,6 +103,18 @@ export async function removeWorkImageAction(
   await requireRole();
   try {
     await removeWorkImage(RemoveInput.parse(input));
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export async function setWorkImageFeaturedAction(
+  input: unknown,
+): Promise<ActionResult> {
+  await requireRole();
+  try {
+    await setWorkImageFeatured(SetFeaturedInput.parse(input));
     return { ok: true };
   } catch (err) {
     return fail(err);

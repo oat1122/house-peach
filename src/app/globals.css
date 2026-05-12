@@ -141,6 +141,22 @@
   }
 }
 
+/**
+ * Full-bleed break-out for inline BeforeAfter embeds inside MDX prose.
+ * Applied on the `.prose-full-bleed` wrapper; any direct child with
+ * `.full-bleed` class breaks out of the constrained prose column to span
+ * the full viewport width using a negative-margin technique.
+ *
+ * Note: this uses `100vw` which includes the scrollbar width on Windows —
+ * acceptable trade-off; the precise scrollbar width is unknowable in CSS
+ * without JS. The prose column is `max-w-prose` (~65ch ≈ 640px) so the
+ * overshoot is small.
+ */
+.prose-full-bleed .full-bleed {
+  margin-inline: calc(50% - 50vw);
+  width: 100vw;
+}
+
 /* Vestibular-safe fallback for Tailwind/shadcn animations (data-state
  * transitions, animate-pulse, animate-spin). motion/react components also
  * read `prefers-reduced-motion` via `useReducedMotion()` — this CSS layer

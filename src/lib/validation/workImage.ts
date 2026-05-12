@@ -50,3 +50,10 @@ export const RemoveInput = z.object({
   mediaAssetId: Id,
 });
 export type RemoveInput = z.infer<typeof RemoveInput>;
+
+export const SetFeaturedInput = z.object({
+  workId: Id,
+  mediaAssetId: Id,
+  isFeatured: z.boolean(),
+});
+export type SetFeaturedInput = z.infer<typeof SetFeaturedInput>;

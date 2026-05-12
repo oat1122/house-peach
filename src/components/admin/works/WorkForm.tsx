@@ -35,7 +35,7 @@ import {
   updateWorkAction,
 } from '@/lib/actions/work';
 import { toast } from '@/lib/toast';
-import { slugify } from '@/lib/utils/slug';
+import { slugify, slugifyAscii } from '@/lib/utils/slug';
 import {
   WorkInsert,
   budgetRanges,
@@ -222,6 +222,13 @@ export function WorkForm({
     });
   };
 
+  const autoSlugAscii = () => {
+    setValue('slug', slugifyAscii(titleValue) as WorkInsert['slug'], {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  };
+
   const status = watch('status');
   const isPublished = status === 'published';
   const pendingAny = saving || publishing || deleting;
@@ -283,12 +290,23 @@ export function WorkForm({
                 variant="outline"
                 size="sm"
                 onClick={autoSlug}
+                title="สร้าง slug จากหัวข้อ — เก็บไทยไว้"
               >
                 Auto
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={autoSlugAscii}
+                title="สร้าง slug แบบอังกฤษล้วน — แชร์บน social ได้สวยกว่า"
+              >
+                EN
+              </Button>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              ใช้เฉพาะ a-z, 0-9, dash · ใช้ใน URL /works/&lt;slug&gt;
+              a-z, 0-9, ไทย, dash · ใช้ใน URL /works/&lt;slug&gt; · slug ภาษาอังกฤษล้วน
+              จะเป็น URL ที่อ่านง่ายและแชร์ได้สวยกว่า (ไม่มี %E0%B8%…)
             </p>
           </Field>
         </Section>
@@ -333,7 +351,13 @@ export function WorkForm({
                     onValueChange={(v) => field.onChange(v as RoomType)}
                   >
                     <SelectTrigger id="roomType" aria-label="ประเภทพื้นที่">
-                      <SelectValue placeholder="เลือกประเภท" />
+                      <SelectValue placeholder="เลือกประเภท">
+                        {(v) =>
+                          v && v in ROOM_TYPE_LABELS
+                            ? ROOM_TYPE_LABELS[v as RoomType]
+                            : 'เลือกประเภท'
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {roomTypes.map((r) => (
@@ -396,7 +420,13 @@ export function WorkForm({
                     }
                   >
                     <SelectTrigger id="budgetRange" aria-label="ช่วงงบประมาณ">
-                      <SelectValue placeholder="— ไม่ระบุ —" />
+                      <SelectValue placeholder="— ไม่ระบุ —">
+                        {(v) =>
+                          v && v !== BUDGET_NONE && v in BUDGET_LABELS
+                            ? BUDGET_LABELS[v as BudgetRange]
+                            : '— ไม่ระบุ —'
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={BUDGET_NONE}>— ไม่ระบุ —</SelectItem>
@@ -481,7 +511,13 @@ export function WorkForm({
                   onValueChange={(v) => field.onChange(v as ContentStatus)}
                 >
                   <SelectTrigger id="status" aria-label="สถานะ">
-                    <SelectValue placeholder="เลือกสถานะ" />
+                    <SelectValue placeholder="เลือกสถานะ">
+                      {(v) =>
+                        v && v in STATUS_LABELS
+                          ? STATUS_LABELS[v as ContentStatus]
+                          : 'เลือกสถานะ'
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {contentStatuses.map((s) => (
@@ -540,9 +576,13 @@ export function WorkForm({
                   type="button"
                   variant="outline"
                   onClick={handlePublishToggle}
-                  disabled={pendingAny || isDirty}
+                  disabled={pendingAny}
                   aria-busy={publishing}
-                  title={isDirty ? 'บันทึกก่อนเปลี่ยนสถานะ' : undefined}
+                  title={
+                    isDirty
+                      ? 'กำลังเปลี่ยนสถานะเท่านั้น — การแก้ form ที่ยังไม่บันทึกจะไม่ถูกบันทึก'
+                      : undefined
+                  }
                 >
                   {publishing ? <Spinner className="size-4" /> : null}
                   {isPublished ? 'เปลี่ยนเป็น draft' : 'เผยแพร่ตอนนี้'}

@@ -64,6 +64,7 @@ export default async function EditWorkPage(props: {
     caption: r.caption,
     sort: r.sort,
     isCover: r.isCover,
+    isFeatured: r.isFeatured,
     asset: {
       path: r.asset.path,
       alt: r.asset.alt,

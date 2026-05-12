@@ -31,14 +31,21 @@ export function buildCreativeWorkLd(input: CreativeWorkLdInput) {
     '@type': 'CreativeWork',
     name: work.title,
     description: work.summary,
-    url: `${origin}/works/${work.slug}`,
+    url: `${origin}/works/${encodeURIComponent(work.slug)}`,
     creator: { '@type': 'Organization', name: 'house-peach' },
     about: work.roomType,
+    // dateModified is a freshness signal Google uses for creative content.
+    // `works.updated_at` auto-updates on every row write, so this stays
+    // accurate without explicit caller work.
+    dateModified: work.updatedAt.toISOString(),
   };
 
   if (allImages.length > 0) ld.image = allImages;
   if (work.yearCompleted) {
     ld.dateCreated = `${work.yearCompleted}-01-01`;
+  }
+  if (work.publishedAt) {
+    ld.datePublished = work.publishedAt.toISOString();
   }
   if (work.location) {
     ld.contentLocation = { '@type': 'Place', name: work.location };
@@ -78,6 +85,10 @@ export function buildWorkBreadcrumbLd(work: WorkRow) {
         '@type': 'ListItem',
         position: 3,
         name: work.title,
+        // Google Rich Results requires `item` on every position. Without it
+        // the entire BreadcrumbList is rejected → no sitelinks breadcrumb
+        // enrichment in SERP.
+        item: `${origin}/works/${encodeURIComponent(work.slug)}`,
       },
     ],
   };

@@ -2,7 +2,7 @@ import 'server-only';
 import { and, desc, eq, inArray, like, or, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { bumpTag, tags as cacheTags } from '@/lib/cache-tags';
+import { bumpTag, bumpWorkPaths, tags as cacheTags } from '@/lib/cache-tags';
 import { mediaAssets, type MediaAssetRow } from '@/lib/db/schema/mediaAssets';
 import { mediaPairs } from '@/lib/db/schema/mediaPairs';
 import { postImages } from '@/lib/db/schema/posts';
@@ -124,6 +124,8 @@ export async function updateMediaAssetMeta(
   if (typeof patch.alt === 'string') set.alt = patch.alt.slice(0, 255);
   if (Object.keys(set).length === 0) return;
   await db.update(mediaAssets).set(set).where(eq(mediaAssets.id, id));
+  // Alt text changes ripple into any work that uses this asset — bust ISR.
+  bumpWorkPaths();
 }
 
 export type DeleteAssetResult = {
@@ -161,6 +163,10 @@ export async function deleteMediaAsset(id: number): Promise<DeleteAssetResult> {
   bumpTag(cacheTags.posts);
   bumpTag(cacheTags.works);
   bumpTag(cacheTags.sitemap);
+  // Path-based bust — covers the case where this asset was a work cover or
+  // appeared in a work gallery (the page won't 500 since FKs are SET NULL,
+  // but it will still render the now-missing image until ISR expires).
+  bumpWorkPaths();
 
   return {
     deleted: true,
@@ -277,6 +283,7 @@ export async function updateMediaPairLabel(id: number, label: string) {
     .update(mediaPairs)
     .set({ label: label.slice(0, 180) })
     .where(eq(mediaPairs.id, id));
+  bumpWorkPaths();
 }
 
 export async function deleteMediaPair(id: number) {
@@ -284,4 +291,5 @@ export async function deleteMediaPair(id: number) {
   // metadata but keep the underlying images.
   await db.delete(mediaPairs).where(eq(mediaPairs.id, id));
   bumpTag(cacheTags.works);
+  bumpWorkPaths();
 }

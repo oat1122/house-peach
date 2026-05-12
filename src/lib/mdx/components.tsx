@@ -138,6 +138,11 @@ function MdxPre(props: ComponentProps<'pre'>) {
  */
 export const baseMdxComponents = {
   a: MdxLink,
+  // Map `# heading` (h1) → MdxHeading2. The page itself owns the single H1
+  // (the work title). Without this map, `# foo` in the MDX body would
+  // render as a native <h1> and create a second H1 on the page, breaking
+  // the document outline + SEO (see .claude/rules/seo.md § Single H1).
+  h1: MdxHeading2,
   h2: MdxHeading2,
   h3: MdxHeading3,
   p: MdxParagraph,

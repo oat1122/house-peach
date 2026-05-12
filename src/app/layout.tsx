@@ -16,8 +16,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'house-peach',
-  description: 'Warm-tone minimalist home decoration studio',
+  // `template` lets child segments export only the page-specific part of the
+  // title and Next prepends "<page> — house-peach" automatically. The
+  // `default` is used by the root route / and any segment that doesn't
+  // override `metadata`. Per .claude/rules/seo.md § Title format.
+  title: {
+    default: 'house-peach — สตูดิโอตกแต่งบ้านสไตล์อบอุ่น',
+    template: '%s — house-peach',
+  },
+  description:
+    'house-peach — สตูดิโอออกแบบและตกแต่งบ้านโทนอบอุ่นสไตล์มินิมอล warm-tone minimalist · ดูผลงานจริง พร้อมแรงบันดาลใจในการแต่งบ้านได้ที่นี่',
+  metadataBase: new URL(
+    (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(
+      /\/$/,
+      '',
+    ),
+  ),
 };
 
 export default function RootLayout({

@@ -2,7 +2,7 @@ import 'server-only';
 import { and, asc, eq, inArray, max, notInArray, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { bumpTag, tags as cacheTags } from '@/lib/cache-tags';
+import { bumpTag, bumpWorkPaths, tags as cacheTags } from '@/lib/cache-tags';
 import { mediaAssets, type MediaAssetRow } from '@/lib/db/schema/mediaAssets';
 import { mediaPairs } from '@/lib/db/schema/mediaPairs';
 import { works, workImages } from '@/lib/db/schema/works';
@@ -12,6 +12,7 @@ import type {
   ReorderInput,
   RemoveInput,
   SetCoverInput,
+  SetFeaturedInput,
   UpdateCaptionInput,
   UpdateKindInput,
 } from '@/lib/validation/workImage';
@@ -25,12 +26,15 @@ export type WorkImageListItem = {
   sort: number;
   asset: MediaAssetRow;
   isCover: boolean;
+  isFeatured: boolean;
 };
 
 function bumpWork(workId: number) {
   bumpTag(cacheTags.works);
   bumpTag(cacheTags.work(workId));
   bumpTag(cacheTags.sitemap);
+  // Path-based bust — see cache-tags.ts. This is what actually clears ISR.
+  bumpWorkPaths();
 }
 
 export async function listWorkImages(
@@ -44,6 +48,7 @@ export async function listWorkImages(
       pairId: workImages.pairId,
       caption: workImages.caption,
       sort: workImages.sort,
+      isFeatured: workImages.isFeatured,
       asset: mediaAssets,
       coverMediaAssetId: works.coverMediaAssetId,
     })
@@ -62,6 +67,7 @@ export async function listWorkImages(
     sort: r.sort,
     asset: r.asset,
     isCover: r.coverMediaAssetId === r.mediaAssetId,
+    isFeatured: r.isFeatured,
   }));
 }
 
@@ -110,6 +116,20 @@ export async function attachAssetsToWork(input: AttachAssetsInput) {
         sort: nextSort++,
       })),
     );
+
+    // Auto-pick the first fresh asset as cover if the work has none yet.
+    // Saves the admin a click on the common "upload + done" path.
+    const [w] = await tx
+      .select({ coverMediaAssetId: works.coverMediaAssetId })
+      .from(works)
+      .where(eq(works.id, workId))
+      .limit(1);
+    if (w && w.coverMediaAssetId == null) {
+      await tx
+        .update(works)
+        .set({ coverMediaAssetId: fresh[0] })
+        .where(eq(works.id, workId));
+    }
   });
 
   bumpWork(workId);
@@ -169,6 +189,20 @@ export async function attachPairToWork(input: AttachPairInput) {
         sort: base + 1,
       },
     ]);
+
+    // Auto-pick the "after" image as cover if the work has none yet — the
+    // after-shot is naturally the marquee shot of a before/after pair.
+    const [w] = await tx
+      .select({ coverMediaAssetId: works.coverMediaAssetId })
+      .from(works)
+      .where(eq(works.id, workId))
+      .limit(1);
+    if (w && w.coverMediaAssetId == null) {
+      await tx
+        .update(works)
+        .set({ coverMediaAssetId: pair.afterAssetId })
+        .where(eq(works.id, workId));
+    }
   });
 
   bumpWork(workId);
@@ -264,24 +298,40 @@ export async function setWorkCover(input: SetCoverInput) {
   bumpWork(workId);
 }
 
+/**
+ * Toggle a work_image's `is_featured` flag. Featured rows get the larger 2×2
+ * tile in the masonry gallery (process + detail sections on the public detail
+ * page). No constraint on how many can be featured per work — the masonry
+ * fills gaps naturally either way, but UX-wise admin probably wants 1–3.
+ */
+export async function setWorkImageFeatured(input: SetFeaturedInput) {
+  const { workId, mediaAssetId, isFeatured } = input;
+  const result = await db
+    .update(workImages)
+    .set({ isFeatured })
+    .where(
+      and(
+        eq(workImages.workId, workId),
+        eq(workImages.mediaAssetId, mediaAssetId),
+      ),
+    );
+  // mysql2's UPDATE result has affectedRows on the OkPacket.
+  const affected = (result as unknown as { affectedRows?: number }[])[0]
+    ?.affectedRows;
+  if (affected === 0) throw new Error('รูปนี้ไม่ได้อยู่ใน work');
+  bumpWork(workId);
+}
+
 export async function removeWorkImage(input: RemoveInput) {
   const { workId, mediaAssetId } = input;
 
   await db.transaction(async (tx) => {
-    // If this row is the cover, clear cover first (FK SET NULL handles delete
-    // case, but we'd rather pick the next cover if there's still gallery left
-    // — clearing keeps things simple, admin can re-pick).
     const [w] = await tx
       .select({ coverMediaAssetId: works.coverMediaAssetId })
       .from(works)
       .where(eq(works.id, workId))
       .limit(1);
-    if (w?.coverMediaAssetId === mediaAssetId) {
-      await tx
-        .update(works)
-        .set({ coverMediaAssetId: null })
-        .where(eq(works.id, workId));
-    }
+    const wasCover = w?.coverMediaAssetId === mediaAssetId;
 
     // Find the row's pair_id; if it's part of a pair, also detach the partner
     // pair_id (the partner row stays as a single).
@@ -304,6 +354,22 @@ export async function removeWorkImage(input: RemoveInput) {
           eq(workImages.mediaAssetId, mediaAssetId),
         ),
       );
+
+    // If the deleted row was the cover, auto-promote the next remaining image
+    // (lowest sort) so the work always has a cover when at least one image is
+    // left. Falls back to null when the gallery is empty.
+    if (wasCover) {
+      const [next] = await tx
+        .select({ id: workImages.mediaAssetId })
+        .from(workImages)
+        .where(eq(workImages.workId, workId))
+        .orderBy(asc(workImages.sort), asc(workImages.mediaAssetId))
+        .limit(1);
+      await tx
+        .update(works)
+        .set({ coverMediaAssetId: next?.id ?? null })
+        .where(eq(works.id, workId));
+    }
 
     if (target?.pairId != null) {
       // Strip pair_id from the orphaned partner so the renderer doesn't try to

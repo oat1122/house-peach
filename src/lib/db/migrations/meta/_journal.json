@@ -8,6 +8,13 @@
       "when": 1778504907694,
       "tag": "0000_cultured_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1778559957873,
+      "tag": "0001_flashy_vengeance",
+      "breakpoints": true
     }
   ]
 }

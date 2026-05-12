@@ -41,7 +41,10 @@ export function composeBeforeAfterEmbed(pairs: Map<number, EmbedPairData>) {
       return null;
     }
     return (
-      <div className="my-8">
+      // `full-bleed` class activates the negative-margin escape-hatch defined
+      // in globals.css `.prose-full-bleed .full-bleed` — breaks out of the
+      // constrained prose column when rendered inside WorkProseSection.
+      <div className="full-bleed my-8">
         <BeforeAfterCard
           before={pair.before}
           after={pair.after}

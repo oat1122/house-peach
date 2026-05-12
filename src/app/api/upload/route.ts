@@ -81,7 +81,9 @@ export async function POST(req: NextRequest) {
           ? 413
           : err.code === 'unsupported_type'
             ? 415
-            : 400;
+            : err.code === 'too_small'
+              ? 422 // Unprocessable Entity — dimensions don't meet OG floor
+              : 400;
       return jsonError(err.message, status);
     }
     const e = err as Error & { code?: string; errno?: number };

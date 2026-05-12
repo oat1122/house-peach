@@ -2,7 +2,7 @@ import 'server-only';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { bumpTag, tags as cacheTags } from '@/lib/cache-tags';
+import { bumpTag, bumpWorkPaths, tags as cacheTags } from '@/lib/cache-tags';
 import { mediaAssets } from '@/lib/db/schema/mediaAssets';
 import { tags as tagsTable } from '@/lib/db/schema/tags';
 import { works, workTags, type WorkRow } from '@/lib/db/schema/works';
@@ -57,12 +57,25 @@ export async function getWorkById(id: number): Promise<WorkDetail | null> {
 export async function getPublishedWorkBySlug(
   slug: string,
 ): Promise<WorkDetail | null> {
-  const [work] = await db
-    .select()
-    .from(works)
-    .where(and(eq(works.slug, slug), eq(works.status, 'published')))
-    .limit(1);
+  // Try NFC first (current slugify() output + how browsers encode shared URLs).
+  // If miss, fall back to NFKD — legacy rows written before slugify() was
+  // taught to re-compose may still be stored decomposed; visually identical
+  // but byte-wise different, so a strict eq() would skip them.
+  const nfc = slug.normalize('NFC');
+  const nfd = slug.normalize('NFKD');
+  const candidates = nfc === nfd ? [nfc] : [nfc, nfd];
+
+  let work: WorkRow | undefined;
+  for (const candidate of candidates) {
+    [work] = await db
+      .select()
+      .from(works)
+      .where(and(eq(works.slug, candidate), eq(works.status, 'published')))
+      .limit(1);
+    if (work) break;
+  }
   if (!work) return null;
+
   const tagRows = await db
     .select({ tagId: workTags.tagId })
     .from(workTags)
@@ -92,6 +105,9 @@ function bumpWork(id: number) {
   bumpTag(cacheTags.works);
   bumpTag(cacheTags.work(id));
   bumpTag(cacheTags.sitemap);
+  // Path-based bust is what actually clears the ISR cache for the public
+  // /works/[slug] and /works pages. See cache-tags.ts for the rationale.
+  bumpWorkPaths();
 }
 
 export async function createWork(input: WorkInsert): Promise<number> {
@@ -150,8 +166,12 @@ export async function updateWork(input: WorkUpdate): Promise<void> {
       set.areaSqm = input.areaSqm != null ? String(input.areaSqm) : null;
     if (input.budgetRange !== undefined)
       set.budgetRange = input.budgetRange ?? null;
-    if (input.coverMediaAssetId !== undefined)
-      set.coverMediaAssetId = input.coverMediaAssetId;
+    // NOTE: `coverMediaAssetId` is intentionally NOT settable via updateWork.
+    // Cover selection is owned by setWorkCover() / the Gallery editor —
+    // routing it through the form payload caused the form save to clobber
+    // gallery writes back to null (RHF holds the stale on-mount default,
+    // and zod's .default(null) refills the field even when the client omits
+    // it). If a future flow needs to set it here, do an explicit unset first.
     if (input.tone !== undefined) set.tone = input.tone;
     if (input.accent !== undefined) set.accent = input.accent;
     if (input.status !== undefined) {

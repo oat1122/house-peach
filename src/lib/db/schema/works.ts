@@ -1,5 +1,6 @@
 import {
   bigint,
+  boolean,
   decimal,
   index,
   mediumtext,
@@ -98,6 +99,10 @@ export const workImages = mysqlTable(
     ),
     caption: varchar('caption', { length: 280 }),
     sort: smallint('sort').notNull().default(0),
+    // Admin-flagged "featured" — masonry layout gives these a 2×2 tile so the
+    // best shots anchor the grid. Non-featured tiles take their natural
+    // aspect ratio in 1×1 cells.
+    isFeatured: boolean('is_featured').notNull().default(false),
   },
   (t) => [
     uniqueIndex('work_images_pk').on(t.workId, t.mediaAssetId),

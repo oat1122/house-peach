@@ -3,11 +3,18 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { GripVertical, Star, Trash2 } from 'lucide-react';
+import { GripVertical, Sparkles, Star, Trash2 } from 'lucide-react';
 import { Reorder, useDragControls } from 'motion/react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { useConfirm } from '@/components/common/ConfirmProvider';
 import {
@@ -22,6 +29,7 @@ import {
   removeWorkImageAction,
   reorderWorkImagesAction,
   setWorkCoverAction,
+  setWorkImageFeaturedAction,
   updateWorkImageCaptionAction,
   updateWorkImageKindAction,
 } from '@/lib/actions/workImage';
@@ -42,6 +50,7 @@ export type GalleryRow = {
   caption: string | null;
   sort: number;
   isCover: boolean;
+  isFeatured: boolean;
   asset: { path: string; alt: string; title: string; width: number; height: number };
 };
 
@@ -167,16 +176,52 @@ export function WorkGalleryEditor({
   };
 
   const handleToggleCover = (mediaAssetId: number, isCover: boolean) => {
+    // Optimistic: flip the star immediately so the admin sees feedback before
+    // the server round-trip + router.refresh() lands. Roll back on failure.
+    const prev = rows;
+    setRows((cur) =>
+      cur.map((r) => ({
+        ...r,
+        isCover: isCover ? false : r.mediaAssetId === mediaAssetId,
+      })),
+    );
     startTransition(async () => {
       const r = await setWorkCoverAction({
         workId,
         mediaAssetId: isCover ? null : mediaAssetId,
       });
       if (!r.ok) {
+        setRows(prev);
         toast.error(r.error);
         return;
       }
       toast.success(isCover ? 'ยกเลิกการเป็นปก' : 'ตั้งเป็นปกแล้ว');
+      router.refresh();
+    });
+  };
+
+  const handleToggleFeatured = (mediaAssetId: number, isFeatured: boolean) => {
+    const next = !isFeatured;
+    // Optimistic flip — masonry tile size depends on this flag so the admin
+    // wants instant visual feedback.
+    const prev = rows;
+    setRows((cur) =>
+      cur.map((r) =>
+        r.mediaAssetId === mediaAssetId ? { ...r, isFeatured: next } : r,
+      ),
+    );
+    startTransition(async () => {
+      const r = await setWorkImageFeaturedAction({
+        workId,
+        mediaAssetId,
+        isFeatured: next,
+      });
+      if (!r.ok) {
+        setRows(prev);
+        toast.error(r.error);
+        return;
+      }
+      toast.success(next ? 'ตั้งเป็นภาพเด่นแล้ว' : 'ยกเลิกภาพเด่น');
       router.refresh();
     });
   };
@@ -258,6 +303,9 @@ export function WorkGalleryEditor({
               onKindChange={(k) => handleKindChange(row.mediaAssetId, k)}
               onCaptionSave={(c) => handleCaptionSave(row.mediaAssetId, c)}
               onToggleCover={() => handleToggleCover(row.mediaAssetId, row.isCover)}
+              onToggleFeatured={() =>
+                handleToggleFeatured(row.mediaAssetId, row.isFeatured)
+              }
               onRemove={() => handleRemove(row.mediaAssetId)}
             />
           ))}
@@ -291,6 +339,7 @@ function GalleryRowItem({
   onKindChange,
   onCaptionSave,
   onToggleCover,
+  onToggleFeatured,
   onRemove,
 }: {
   row: GalleryRow;
@@ -302,6 +351,7 @@ function GalleryRowItem({
   onKindChange: (kind: WorkImageKind) => void;
   onCaptionSave: (caption: string) => void;
   onToggleCover: () => void;
+  onToggleFeatured: () => void;
   onRemove: () => void;
 }) {
   const dragControls = useDragControls();
@@ -355,6 +405,14 @@ function GalleryRowItem({
             <Star className="size-3" aria-hidden />
           </span>
         )}
+        {row.isFeatured && !row.isCover && (
+          <span
+            className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-accent text-accent-foreground"
+            title="ภาพเด่น — masonry tile 2×2"
+          >
+            <Sparkles className="size-3" aria-hidden />
+          </span>
+        )}
       </div>
 
       <div className="grow space-y-1.5">
@@ -362,22 +420,39 @@ function GalleryRowItem({
           {row.asset.title || row.asset.alt || `asset #${row.mediaAssetId}`}
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <span
+            id={`kind-label-${row.mediaAssetId}`}
+            className="text-[11px] text-muted-foreground"
+          >
             ประเภท
-            <select
-              value={row.kind}
-              onChange={(e) => onKindChange(e.target.value as WorkImageKind)}
-              disabled={busy}
-              className="h-6 rounded border border-input bg-transparent px-1.5 text-[11px]"
+          </span>
+          <Select
+            value={row.kind}
+            onValueChange={(v) => onKindChange(v as WorkImageKind)}
+            disabled={busy}
+          >
+            <SelectTrigger
+              size="sm"
               aria-label="ประเภทรูป"
+              aria-labelledby={`kind-label-${row.mediaAssetId}`}
+              className="h-7 w-auto min-w-28 px-2 text-xs"
             >
+              <SelectValue placeholder="เลือกประเภท">
+                {(v) =>
+                  v && v in KIND_LABELS
+                    ? KIND_LABELS[v as WorkImageKind]
+                    : 'เลือกประเภท'
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
               {workImageKinds.map((k) => (
-                <option key={k} value={k}>
+                <SelectItem key={k} value={k}>
                   {KIND_LABELS[k]}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-          </label>
+            </SelectContent>
+          </Select>
           {row.pairId != null && (
             <span className="text-[10px] text-muted-foreground">
               · pair #{row.pairId}
@@ -412,6 +487,24 @@ function GalleryRowItem({
           {busy ? <Spinner className="size-3" /> : <Star className="size-3" aria-hidden />}
           <span>{row.isCover ? 'ปก' : 'ตั้งปก'}</span>
         </Button>
+        {(row.kind === 'process' || row.kind === 'detail') && (
+          <Button
+            type="button"
+            size="xs"
+            variant={row.isFeatured ? 'secondary' : 'outline'}
+            onClick={onToggleFeatured}
+            disabled={busy}
+            aria-pressed={row.isFeatured}
+            title={
+              row.isFeatured
+                ? 'ยกเลิกภาพเด่น'
+                : 'ตั้งเป็นภาพเด่น (masonry 2×2)'
+            }
+          >
+            <Sparkles className="size-3" aria-hidden />
+            <span>{row.isFeatured ? 'เด่น' : 'ตั้งเด่น'}</span>
+          </Button>
+        )}
         <Button
           type="button"
           size="xs"

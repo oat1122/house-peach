@@ -8,6 +8,17 @@ import { imageStore } from './image';
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5MB
 
+/**
+ * Facebook OG image min dimensions (1.91:1, ≥600×315). We enforce ≥600 wide
+ * AND ≥315 tall at upload time so any image picked as a cover later will
+ * survive FB's share-preview generator without falling back to a "view post"
+ * generic preview. The work cover preset crops to 3:2 (1500×1000) so original
+ * uploads should easily clear this floor — this is a soft guardrail for
+ * admins who try to upload phone screenshots or thumbnails.
+ */
+export const MIN_UPLOAD_WIDTH = 600;
+export const MIN_UPLOAD_HEIGHT = 315;
+
 export const ALLOWED_MIME = new Set([
   'image/jpeg',
   'image/png',
@@ -42,7 +53,8 @@ export class UploadValidationError extends Error {
       | 'too_large'
       | 'unsupported_type'
       | 'corrupt'
-      | 'empty',
+      | 'empty'
+      | 'too_small',
   ) {
     super(message);
     this.name = 'UploadValidationError';
@@ -83,6 +95,12 @@ export async function processAndStoreImage(
   }
   if (!meta.width || !meta.height) {
     throw new UploadValidationError('Image has no dimensions', 'corrupt');
+  }
+  if (meta.width < MIN_UPLOAD_WIDTH || meta.height < MIN_UPLOAD_HEIGHT) {
+    throw new UploadValidationError(
+      `รูปต้องมีขนาดอย่างน้อย ${MIN_UPLOAD_WIDTH}×${MIN_UPLOAD_HEIGHT}px (อัปโหลด: ${meta.width}×${meta.height}px) — รูปเล็กกว่านี้จะไม่ขึ้น preview บน Facebook`,
+      'too_small',
+    );
   }
 
   const uuid = randomUUID();

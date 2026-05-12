@@ -1,13 +1,42 @@
 import 'server-only';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 /**
  * Wrapper around Next 16's two-arg revalidateTag. We default to `'max'` for
  * stale-while-revalidate semantics — the call returns immediately and the next
  * request to a tagged page triggers regeneration in the background.
+ *
+ * Note: tag-based invalidation only fires for data fetched inside
+ * `unstable_cache({ tags })` or `fetch({ next: { tags } })`. Pages that read
+ * Drizzle directly (the current shape of this project) don't subscribe to
+ * tags, so these calls are effectively no-ops today — kept as
+ * forward-compat in case we wrap reads in `unstable_cache` later. The
+ * actual ISR bust happens via `bumpWorkPaths()` / `bumpPostPaths()` below.
  */
 export function bumpTag(tag: string) {
   revalidateTag(tag, 'max');
+}
+
+/**
+ * Bust the public works pages on Next's ISR cache. Called from every
+ * service-layer mutation that touches a work or work_image so admins see
+ * their save immediately instead of waiting for the 60s revalidate window.
+ *
+ * Route-segment form (`'/works/[slug]', 'page'`) busts all detail-page
+ * cache entries at once — no per-slug lookup needed. Per Next 16 docs the
+ * revalidation only fires on next visit (lazy), so blanket-busting is cheap.
+ */
+export function bumpWorkPaths() {
+  revalidatePath('/works/[slug]', 'page');
+  revalidatePath('/works');
+  revalidatePath('/sitemap.xml');
+}
+
+/** Same idea as bumpWorkPaths but for blog posts. Wired in once /blog ships. */
+export function bumpPostPaths() {
+  revalidatePath('/blog/[slug]', 'page');
+  revalidatePath('/blog');
+  revalidatePath('/sitemap.xml');
 }
 
 export const tags = {

@@ -30,7 +30,11 @@ export type WorkImageKind = (typeof workImageKinds)[number];
 export const WorkInsert = z.object({
   title: z.string().min(4, 'หัวข้อต้องยาวอย่างน้อย 4 ตัวอักษร').max(180),
   slug: Slug,
-  summary: z.string().min(40, 'สรุปต้องยาวอย่างน้อย 40 ตัวอักษร').max(280),
+  // Summary doubles as the page's meta description — Google's sweet spot
+  // is 80–160 chars. `buildWorkMetadata` pads anything shorter, but at the
+  // input gate we still ask admins for a meaningful 80+ to avoid the
+  // generic "house-peach" padding showing up on every short-summary work.
+  summary: z.string().min(80, 'สรุปต้องยาวอย่างน้อย 80 ตัวอักษร').max(280),
   bodyMdx: z.string().min(20, 'รายละเอียดยังสั้นเกินไป'),
   roomType: z.enum(roomTypes),
   style: z.string().min(2).max(60),

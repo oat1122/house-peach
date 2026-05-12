@@ -1,0 +1,1 @@
+ALTER TABLE `work_images` ADD `is_featured` boolean DEFAULT false NOT NULL;
