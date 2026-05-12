@@ -184,16 +184,13 @@ export async function setWorkStatus(
   id: number,
   status: 'draft' | 'published' | 'archived',
 ): Promise<void> {
-  await db
-    .update(works)
-    .set({
-      status,
-      publishedAt:
-        status === 'published'
-          ? sql`COALESCE(${works.publishedAt}, NOW())`
-          : works.publishedAt,
-    })
-    .where(eq(works.id, id));
+  // Only stamp publishedAt on first publish; leave existing value untouched
+  // for draft/archived so the original publication timestamp is preserved.
+  const set: Record<string, unknown> = { status };
+  if (status === 'published') {
+    set.publishedAt = sql`COALESCE(${works.publishedAt}, NOW())`;
+  }
+  await db.update(works).set(set).where(eq(works.id, id));
   bumpWork(id);
 }
 
