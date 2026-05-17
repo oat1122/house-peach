@@ -43,14 +43,14 @@ export function PostHero({ post }: Props) {
 
         {/* Title */}
         <h1
-          className="font-serif text-4xl md:text-5xl font-bold tracking-tight text-ink leading-[1.2] mt-5 max-w-3xl"
+          className="font-serif text-4xl md:text-5xl font-bold tracking-tight text-ink leading-[1.2] mt-5 max-w-3xl break-words"
           style={{ textWrap: 'balance' } as React.CSSProperties}
         >
           {post.title}
         </h1>
 
         {/* Excerpt */}
-        <p className="text-lg text-muted-brand leading-relaxed max-w-2xl mt-4 mb-8">
+        <p className="text-lg text-muted-brand leading-relaxed max-w-2xl mt-4 mb-8 break-words">
           {post.excerpt}
         </p>
 

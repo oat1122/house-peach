@@ -125,7 +125,7 @@ function BeforeAfterSection({
               />
             </div>
             {c.row.caption && (
-              <figcaption className="text-xs text-muted-brand text-center mt-2">
+              <figcaption className="text-xs text-muted-brand text-center mt-2 break-words">
                 {c.row.caption}
               </figcaption>
             )}

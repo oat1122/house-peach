@@ -57,11 +57,11 @@ export function WorkCardCompact({
         unoptimized
       />
       <div className="min-w-0">
-        <p className="text-sm font-medium text-ink line-clamp-2 group-hover:text-brand-accent transition-colors">
+        <p className="text-sm font-medium text-ink line-clamp-2 group-hover:text-brand-accent transition-colors break-words">
           {title}
         </p>
         {hasMetaLine && (
-          <p className="text-xs text-muted-brand mt-0.5">
+          <p className="text-xs text-muted-brand mt-0.5 break-words">
             {style ?? null}
             {style && yearCompleted ? ' · ' : null}
             {yearCompleted ?? null}

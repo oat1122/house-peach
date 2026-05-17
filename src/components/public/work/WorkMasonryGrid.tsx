@@ -116,7 +116,7 @@ export function WorkMasonryGrid({
               </span>
             )}
             {item.caption && (
-              <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/70 to-transparent px-3 pb-2 pt-8 text-xs text-bg">
+              <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/70 to-transparent px-3 pb-2 pt-8 text-xs text-bg break-words line-clamp-2">
                 {item.caption}
               </span>
             )}

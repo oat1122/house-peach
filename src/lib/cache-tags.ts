@@ -60,3 +60,21 @@ export function bumpPostById(id: number) {
   revalidateTag(tags.post(id), 'max');
   bumpPostPaths();
 }
+
+/**
+ * Cache bust for any tag mutation (create / update / delete).
+ *
+ * Tags are shared between blog + works, so a single rename/delete may show
+ * stale data on either domain's listings and detail pages. We err on the
+ * side of busting both — the cost is one extra ISR regeneration on next
+ * visit; the alternative (stale tag names rendered into already-cached
+ * pages) is worse SEO + worse UX.
+ *
+ * Call from every service function in `lib/services/tag.ts`.
+ */
+export function bumpTags() {
+  revalidateTag(tags.posts, 'max');
+  revalidateTag(tags.works, 'max');
+  bumpPostPaths();
+  bumpWorkPaths();
+}

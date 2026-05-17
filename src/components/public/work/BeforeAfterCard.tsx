@@ -81,7 +81,7 @@ export function BeforeAfterCard({
         )}
       </div>
       {caption && (
-        <figcaption className="text-center text-xs text-muted-foreground">
+        <figcaption className="text-center text-xs text-muted-foreground break-words">
           {caption}
         </figcaption>
       )}

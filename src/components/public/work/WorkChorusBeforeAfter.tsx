@@ -39,7 +39,7 @@ export function WorkChorusBeforeAfter({ pair }: Props) {
         priority
       />
       {pair.caption && (
-        <p className="mt-2 px-4 text-xs md:text-sm text-muted-brand text-center font-sans italic">
+        <p className="mt-2 px-4 text-xs md:text-sm text-muted-brand text-center font-sans italic break-words">
           {pair.caption}
         </p>
       )}

@@ -33,9 +33,9 @@ export function BackToTop() {
       tabIndex={visible ? 0 : -1}
       className={cn(
         'fixed z-50 size-11 rounded-full bg-ink text-bg shadow-md',
-        // Mobile: above bottom tab bar + safe-area-inset
+        // Mobile: standard bottom + iOS safe-area gutter (no bottom tab bar in Phase 5)
         // Desktop: standard position
-        'bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 md:bottom-6 md:right-6',
+        'bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 md:bottom-6 md:right-6',
         'flex items-center justify-center',
         'hover:bg-brand-accent transition-colors motion-reduce:transition-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg',

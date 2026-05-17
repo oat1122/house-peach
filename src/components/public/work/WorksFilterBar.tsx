@@ -70,7 +70,7 @@ export function WorksFilterBar({ availableStyles }: Props) {
 
   return (
     <div
-      className="sticky top-0 z-10 bg-bg/90 backdrop-blur-sm border-b border-line"
+      className="sticky top-[var(--header-h,56px)] z-10 bg-bg/90 backdrop-blur-sm border-b border-line"
       aria-busy={isPending}
     >
       <form

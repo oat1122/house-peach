@@ -225,12 +225,12 @@ export default async function WorkDetailPage(props: {
               tags={heroTags}
             />
 
-            <h1 className="font-serif text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] text-ink mt-5">
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] text-ink mt-5 [text-wrap:balance] break-words">
               {work.title}
             </h1>
 
             {work.summary && (
-              <p className="mt-3 max-w-prose text-base md:text-lg text-muted-brand leading-[1.65]">
+              <p className="mt-3 max-w-prose text-base md:text-lg text-muted-brand leading-[1.65] break-words">
                 {work.summary}
               </p>
             )}
@@ -288,7 +288,7 @@ export default async function WorkDetailPage(props: {
 
             {/* ── Ch 02 · Before & After ─────────────────────────────── */}
             {chorusPair && (
-              <div className="mt-24">
+              <div className="mt-16 md:mt-24">
                 <FadeUp>
                   <WorkChapterDivider
                     number="02"
@@ -338,7 +338,7 @@ export default async function WorkDetailPage(props: {
 
             {/* ── Ch 03 · Concept ─────────────────────────────────────── */}
             {hasConcept && (
-              <div className="mt-24">
+              <div className="mt-16 md:mt-24">
                 <FadeUp>
                   <WorkChapterDivider
                     number="03"
@@ -357,7 +357,7 @@ export default async function WorkDetailPage(props: {
 
             {/* ── Ch 04 · Process ─────────────────────────────────────── */}
             {processImages.length > 0 && (
-              <div className="mt-24">
+              <div className="mt-16 md:mt-24">
                 <FadeUp>
                   <WorkChapterDivider
                     number="04"
@@ -377,7 +377,7 @@ export default async function WorkDetailPage(props: {
 
             {/* ── Ch 05 · Details ────────────────────────────────────── */}
             {detailClusters.length > 0 && (
-              <div className="mt-24">
+              <div className="mt-16 md:mt-24">
                 <FadeUp>
                   <WorkChapterDivider
                     number="05"
@@ -409,7 +409,7 @@ export default async function WorkDetailPage(props: {
                 {tagNames.map((name) => (
                   <li
                     key={name}
-                    className="rounded-full bg-bg2 px-3 py-1 text-xs text-ink"
+                    className="rounded-full bg-bg2 px-3 py-1 text-xs text-ink max-w-full break-words"
                   >
                     #{name}
                   </li>

@@ -30,7 +30,7 @@ export function WorkDesignerNote({ note }: Props) {
         {/* sr-only heading lets AT users navigating by heading landmark jump
              here; visual rendering is unchanged. */}
         <h3 className="sr-only">หมายเหตุจากนักออกแบบ</h3>
-        <p className="font-sans text-base leading-[1.75] text-ink italic whitespace-pre-line">
+        <p className="font-sans text-base leading-[1.75] text-ink italic whitespace-pre-line break-words">
           {note}
         </p>
         <p className="text-xs text-muted-brand text-right mt-3">

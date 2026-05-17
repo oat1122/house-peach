@@ -37,10 +37,14 @@ export function WorkMetaRow({
   return (
     <div className="flex items-center gap-3 flex-wrap text-xs text-muted-brand">
       {tags.slice(0, 2).map((tag) => (
-        <Link key={tag.slug} href={`/works?tag=${encodeURIComponent(tag.slug)}`}>
+        <Link
+          key={tag.slug}
+          href={`/works?tag=${encodeURIComponent(tag.slug)}`}
+          className="min-w-0 max-w-full"
+        >
           <Badge
             variant="secondary"
-            className="rounded-full px-3 text-muted-brand font-bold cursor-pointer"
+            className="rounded-full px-3 text-muted-brand font-bold cursor-pointer max-w-full break-words"
           >
             {tag.name}
           </Badge>
@@ -49,7 +53,7 @@ export function WorkMetaRow({
 
       <Badge
         variant="outline"
-        className="rounded-full px-3 text-muted-brand font-medium"
+        className="rounded-full px-3 text-muted-brand font-medium max-w-full break-words"
       >
         {roomTypeLabel}
       </Badge>
@@ -57,7 +61,7 @@ export function WorkMetaRow({
       {style && (
         <Badge
           variant="outline"
-          className="rounded-full px-3 text-muted-brand font-medium"
+          className="rounded-full px-3 text-muted-brand font-medium max-w-full break-words"
         >
           {style}
         </Badge>
@@ -71,9 +75,9 @@ export function WorkMetaRow({
       )}
 
       {location && (
-        <span className="flex items-center gap-1">
-          <MapPin size={14} aria-hidden="true" />
-          <span>{location}</span>
+        <span className="flex items-center gap-1 min-w-0">
+          <MapPin size={14} aria-hidden="true" className="flex-none" />
+          <span className="break-words min-w-0">{location}</span>
         </span>
       )}
 

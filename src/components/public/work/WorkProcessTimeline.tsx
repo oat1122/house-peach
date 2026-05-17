@@ -169,7 +169,7 @@ function StepContent({
           />
         </div>
         {step.caption && (
-          <p className="text-sm text-muted-brand mt-2 leading-snug">
+          <p className="text-sm text-muted-brand mt-2 leading-snug break-words">
             {step.caption}
           </p>
         )}

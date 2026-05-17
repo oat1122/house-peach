@@ -30,12 +30,12 @@ export function WorkPullQuote({ quote, clientName }: Props) {
         aria-label="คำพูดจากลูกค้า"
         className="max-w-2xl mx-auto mt-16 bg-bg2 rounded-r-md border-l-2 md:border-l-4 border-brand-accent pl-4 md:pl-8 p-4 md:p-6 my-8"
       >
-        <blockquote className="font-serif text-2xl md:text-3xl leading-[1.4] text-ink">
+        <blockquote className="font-serif text-2xl md:text-3xl leading-[1.4] text-ink break-words">
           {quote}
         </blockquote>
         {clientName && (
           <figcaption className="mt-3">
-            <cite className="text-xs text-muted-brand not-italic">
+            <cite className="text-xs text-muted-brand not-italic break-words">
               — {clientName}
             </cite>
           </figcaption>

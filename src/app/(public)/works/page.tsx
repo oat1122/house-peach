@@ -10,7 +10,15 @@ import { listPublishedWorks, listDistinctWorkStyles } from '@/lib/services/work'
 import { roomTypeValues, type RoomType } from '@/lib/db/schema/works';
 import { env } from '@/env';
 
-export const revalidate = 60;
+/**
+ * Force per-request rendering. /works accepts `?room=`, `?style=`, `?tag=`,
+ * `?page=` searchParams that filter the listing. With `revalidate = N` Next 16
+ * would key the router cache by pathname only, causing soft navigation between
+ * filter combinations to serve a stale RSC payload (the active chip updates
+ * but the grid stays on the previous filter's items). Detail route
+ * (`/works/[slug]`) keeps revalidate because its cache key is the slug.
+ */
+export const dynamic = 'force-dynamic';
 
 // ── SEO ──────────────────────────────────────────────────────────────────────
 
@@ -30,6 +38,10 @@ const SearchParams = z.object({
     .optional()
     .catch(undefined), // silently ignore invalid room values
   style: z.string().max(60).optional().catch(undefined),
+  // Tag slug filter — silently dropped if invalid. Service layer resolves the
+  // slug → tag id; missing tags return an empty list rather than 404 so a stale
+  // bookmark still renders a clean empty state.
+  tag: z.string().max(80).optional().catch(undefined),
 });
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -48,9 +60,9 @@ export default async function WorksPage({ searchParams }: PageProps) {
   const parsed = SearchParams.safeParse(flattened);
   const params = parsed.success
     ? parsed.data
-    : { page: 1, room: undefined, style: undefined };
+    : { page: 1, room: undefined, style: undefined, tag: undefined };
 
-  const isFiltered = !!(params.room || params.style);
+  const isFiltered = !!(params.room || params.style || params.tag);
 
   // Per spec §7: "Load more" uses `page` param to expand the visible set.
   // We fetch all items up to current page to simulate cumulative load-more.
@@ -63,6 +75,7 @@ export default async function WorksPage({ searchParams }: PageProps) {
       limit,
       roomType: params.room as RoomType | undefined,
       style: params.style,
+      tagSlug: params.tag,
     }),
     listDistinctWorkStyles(),
   ]);
@@ -102,6 +115,7 @@ export default async function WorksPage({ searchParams }: PageProps) {
   const filterParams = {
     room: params.room as string | undefined,
     style: params.style,
+    tag: params.tag,
   };
 
   const countLabel = isFiltered
@@ -114,10 +128,10 @@ export default async function WorksPage({ searchParams }: PageProps) {
         {/* Lead block: eyebrow H1 + lead paragraph + count */}
         <FadeUp>
           <div className="pt-10 md:pt-12">
-            <h1 className="font-serif text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] text-ink">
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] text-ink break-words">
               ผลงาน · Works
             </h1>
-            <p className="text-base md:text-lg text-muted-brand leading-[1.65] max-w-prose mt-3">
+            <p className="text-base md:text-lg text-muted-brand leading-[1.65] max-w-prose mt-3 break-words">
               สตูดิโอออกแบบและตกแต่งบ้านแนวอบอุ่นแบบเรียบง่าย — เลือกดูผลงานตามประเภทห้อง
               สไตล์ หรือดูทั้งหมดเพื่อหาแรงบันดาลใจของบ้านในแบบของคุณ
             </p>
@@ -135,10 +149,10 @@ export default async function WorksPage({ searchParams }: PageProps) {
       <div className="mt-6">
         <Suspense
           fallback={
-            <div className="sticky top-0 z-10 bg-bg/90 backdrop-blur-sm border-b border-line">
+            <div className="sticky top-[var(--header-h,56px)] z-10 bg-bg/90 backdrop-blur-sm border-b border-line">
               <div className="mx-auto max-w-6xl px-4 md:px-6 py-3 flex gap-3">
-                <Skeleton className="h-8 w-28 rounded-lg" />
-                <Skeleton className="h-8 w-28 rounded-lg" />
+                <Skeleton className="h-11 w-32 rounded-lg" />
+                <Skeleton className="h-11 w-32 rounded-lg" />
               </div>
             </div>
           }
@@ -198,7 +212,7 @@ export async function generateMetadata({
     ? parsed.data
     : { page: 1, room: undefined, style: undefined };
 
-  const hasFilter = !!(params.room || params.style);
+  const hasFilter = !!(params.room || params.style || params.tag);
   const hasPagination = params.page > 1;
 
   // Base page — full metadata including OG/Twitter for social previews

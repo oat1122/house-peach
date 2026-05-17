@@ -47,8 +47,8 @@ export function WorkStatBand({
         className="-mx-4 md:-mx-6 bg-bg2 py-6 md:py-8 px-4 md:px-6 mt-6"
       >
         <div
-          className="grid gap-6 max-w-3xl mx-auto"
-          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))' }}
+          className="grid gap-4 md:gap-6 max-w-3xl mx-auto"
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(70px, 1fr))' }}
         >
           {areaSqm != null && (
             <StatCell
@@ -94,18 +94,18 @@ function StatCell({
   compact?: boolean;
 }) {
   return (
-    <div className="text-center">
+    <div className="text-center min-w-0">
       <p
         className={
-          'font-sans font-bold tracking-tight text-ink ' +
+          'font-sans font-bold tracking-tight text-ink break-words ' +
           (compact
-            ? 'text-xl md:text-2xl leading-tight'
-            : 'text-3xl md:text-5xl')
+            ? 'text-lg md:text-2xl leading-tight'
+            : 'text-2xl md:text-5xl')
         }
       >
         {value}
         {unit && (
-          <span className="ml-1 text-base md:text-lg font-normal">{unit}</span>
+          <span className="ml-1 text-sm md:text-lg font-normal">{unit}</span>
         )}
       </p>
       <p className="text-[10px] uppercase tracking-widest text-muted-brand mt-1">

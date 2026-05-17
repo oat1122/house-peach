@@ -39,7 +39,7 @@ export function WorkBreadcrumb({ workTitle }: Props) {
             </li>
             <li
               aria-current="page"
-              className="text-ink font-semibold line-clamp-1 max-w-[60vw] md:max-w-md"
+              className="text-ink font-semibold truncate max-w-[60vw] md:max-w-md min-w-0"
             >
               {workTitle}
             </li>

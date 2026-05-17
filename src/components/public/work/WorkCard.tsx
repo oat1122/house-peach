@@ -99,16 +99,16 @@ export function WorkCard({ work, variant = 'regular', priority = false }: Props)
             </div>
 
             {/* Text column */}
-            <div className="px-4 md:px-0 mt-4 md:mt-0 md:py-4">
-              <p className="text-[11px] uppercase tracking-widest text-muted-brand">
+            <div className="px-4 md:px-0 mt-4 md:mt-0 md:py-4 min-w-0">
+              <p className="text-[11px] uppercase tracking-widest text-muted-brand break-words">
                 {eyebrow}
               </p>
               {/* h2 — listing page h1 is "ผลงาน"; hero card is the next heading
                    level. Regular cards use <p> (not a section heading). */}
-              <h2 className="font-serif text-3xl md:text-4xl font-bold text-ink mt-2 leading-[1.2] group-hover:text-accent transition-colors line-clamp-3">
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-ink mt-2 leading-[1.2] group-hover:text-accent transition-colors line-clamp-3 break-words">
                 {title}
               </h2>
-              <p className="text-sm md:text-base text-muted-brand leading-[1.65] mt-2 line-clamp-3">
+              <p className="text-sm md:text-base text-muted-brand leading-[1.65] mt-2 line-clamp-3 break-words">
                 {summary}
               </p>
 
@@ -191,15 +191,15 @@ export function WorkCard({ work, variant = 'regular', priority = false }: Props)
         </div>
 
         {/* Meta */}
-        <div className="mt-3">
-          <p className="text-[11px] uppercase tracking-widest text-muted-brand">
+        <div className="mt-3 min-w-0">
+          <p className="text-[11px] uppercase tracking-widest text-muted-brand break-words">
             {eyebrow}
           </p>
-          <p className="text-base font-semibold text-ink mt-1 line-clamp-2 group-hover:text-accent transition-colors">
+          <p className="text-base font-semibold text-ink mt-1 line-clamp-2 group-hover:text-accent transition-colors break-words">
             {title}
           </p>
           {statLine && (
-            <p className="text-xs text-muted-brand mt-1">{statLine}</p>
+            <p className="text-xs text-muted-brand mt-1 break-words">{statLine}</p>
           )}
         </div>
       </Link>

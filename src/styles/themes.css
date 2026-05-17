@@ -68,6 +68,12 @@
  * above-base vowel marks (เ แ โ ใ ไ  U+0E40–U+0E44) where WebKit floats
  * the vowel mark alone, detaching it from its consonant (spec §7, §21 #1).
  */
+/* Wrap rule — same rationale as .prose-post. Applies to the chapter body
+ * MDX content rendered inside work detail pages. */
+.chapter-body {
+  overflow-wrap: anywhere;
+}
+
 .chapter-body > p:first-child::first-letter {
   font-family: var(--font-serif);
   font-size: 3.5em;
@@ -109,6 +115,11 @@
   line-height: 1.85;
   color: var(--ink);
   letter-spacing: 0.005em;
+  /* Long unbroken tokens (e.g. "555555555…", URLs without dashes,
+   * Thai sequences without spaces) must wrap inside the prose container —
+   * default `overflow-wrap: normal` lets them push past the article width on
+   * mobile and trigger horizontal scroll. */
+  overflow-wrap: anywhere;
 }
 
 .prose-post p {

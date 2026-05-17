@@ -15,7 +15,7 @@ type Props = {
   /** The current page number to compute the next page link. */
   currentPage: number;
   /** Preserved filter params to carry into the load-more URL. */
-  filterParams: { room?: string; style?: string };
+  filterParams: { room?: string; style?: string; tag?: string };
 };
 
 /**
@@ -81,6 +81,7 @@ export function WorksListing({
     const params = new URLSearchParams();
     if (filterParams.room) params.set('room', filterParams.room);
     if (filterParams.style) params.set('style', filterParams.style);
+    if (filterParams.tag) params.set('tag', filterParams.tag);
     params.set('page', String(currentPage + 1));
     return `/works?${params.toString()}`;
   }

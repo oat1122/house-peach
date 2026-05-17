@@ -117,15 +117,15 @@ function WorkMaterialPalette({
       className="flex flex-wrap md:flex-col gap-2"
     >
       {materials.map((item, idx) => (
-        <li key={idx} className="list-none">
-          <div className="inline-flex items-center gap-2 rounded-full bg-bg2 px-3 py-1.5 text-sm text-ink">
+        <li key={idx} className="list-none max-w-full min-w-0">
+          <div className="inline-flex items-start gap-2 rounded-full bg-bg2 px-3 py-1.5 text-sm text-ink max-w-full">
             {/* Color swatch — aria-hidden; decorative */}
             <span
               aria-hidden="true"
-              className="size-4 rounded-sm flex-none border border-line"
+              className="size-4 mt-0.5 rounded-sm flex-none border border-line"
               style={{ backgroundColor: item.colorHex }}
             />
-            <span>{item.name}</span>
+            <span className="break-words min-w-0">{item.name}</span>
           </div>
         </li>
       ))}
