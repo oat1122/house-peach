@@ -6,15 +6,19 @@ import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { mediaAssets } from '@/lib/db/schema/mediaAssets';
 import { tags as tagsTable } from '@/lib/db/schema/tags';
-import { getPublishedWorkBySlug } from '@/lib/services/work';
+import {
+  getPublishedWorkBySlug,
+  listSimilarWorks,
+  listLatestOtherWorks,
+} from '@/lib/services/work';
 import { listWorkImages } from '@/lib/services/workImage';
 import { compileWorkMdx } from '@/lib/mdx/compile';
 import { buildCreativeWorkLd, buildWorkBreadcrumbLd } from '@/lib/seo/jsonld';
 import { buildWorkMetadata } from '@/lib/seo/metadata';
-import { resolveRoomTypeLabel, resolveBudgetLabel } from '@/lib/utils/workLabels';
+import { resolveRoomTypeLabel } from '@/lib/utils/workLabels';
+import { estimateWordCount } from '@/lib/utils/wordCount';
+import { FadeUp } from '@/components/motion/FadeUp';
 import { WorkHero } from '@/components/public/work/WorkHero';
-import { WorkMetaSidebar } from '@/components/public/work/WorkMetaSidebar';
-import { WorkProseSection } from '@/components/public/work/WorkProseSection';
 import { WorkGallerySection } from '@/components/public/work/WorkGallerySection';
 import { buildClusters } from '@/components/public/work/WorkGallery';
 import {
@@ -22,7 +26,17 @@ import {
   type EmbedPairData,
 } from '@/components/public/work/BeforeAfterEmbed';
 import type { BeforeAfterImage } from '@/components/public/work/BeforeAfterSlider';
-import { FadeUp } from '@/components/motion/FadeUp';
+import { WorkStatBand } from '@/components/public/work/WorkStatBand';
+import { WorkChapterDivider } from '@/components/public/work/WorkChapterDivider';
+import { WorkChapterBody } from '@/components/public/work/WorkChapterBody';
+import { WorkChorusBeforeAfter } from '@/components/public/work/WorkChorusBeforeAfter';
+import { WorkPullQuote } from '@/components/public/work/WorkPullQuote';
+import { WorkConceptSection } from '@/components/public/work/WorkConceptSection';
+import { WorkProcessTimeline } from '@/components/public/work/WorkProcessTimeline';
+import { WorkDesignerNote } from '@/components/public/work/WorkDesignerNote';
+import { WorkCTACard } from '@/components/public/work/WorkCTACard';
+import { WorkRelatedSection } from '@/components/public/work/WorkRelatedSection';
+import { BeforeAfterCard } from '@/components/public/work/BeforeAfterCard';
 
 export const revalidate = 60; // ISR — 60s per `seo.md §8.1 Render mode`
 
@@ -77,7 +91,8 @@ export default async function WorkDetailPage(props: {
   const work = await getPublishedWorkBySlug(decodeSlug(slug));
   if (!work) notFound();
 
-  const [images, tagNames] = await Promise.all([
+  // ── Parallel data fetch (spec §14c) ───────────────────────────────────────
+  const [images, tagNames, sidebarRelated] = await Promise.all([
     listWorkImages(work.id),
     work.tagIds.length > 0
       ? db
@@ -86,61 +101,62 @@ export default async function WorkDetailPage(props: {
           .where(inArray(tagsTable.id, work.tagIds))
           .then((rows) => rows.map((r) => r.name))
       : Promise.resolve<string[]>([]),
+    listSimilarWorks(work.id, work.roomType, work.style, 3),
   ]);
+
+  // Serial: bottomRelated depends on sidebarRelated ids (spec §14c)
+  const sidebarIds = sidebarRelated.map((w) => w.id);
+  const bottomRelated = await listLatestOtherWorks(work.id, sidebarIds, 3);
+
+  // ── Server-side pre-computation ───────────────────────────────────────────
+  const wordCount = estimateWordCount(work.bodyMdx);
+  const firstBodyChar = work.bodyMdx.trim()[0] ?? '';
 
   const cover = work.coverMediaAssetId
     ? images.find((r) => r.mediaAssetId === work.coverMediaAssetId)
     : null;
 
-  // Build per-work pair lookup → MDX embed component closure.
+  const roomTypeLabel = resolveRoomTypeLabel(work.roomType);
+
+  // Floor plan: first kind='plan' image by existing sort order
+  const floorPlanImage =
+    images.find((i) => i.kind === 'plan')?.asset ?? null;
+  const floorPlanForSection = floorPlanImage
+    ? {
+        path: floorPlanImage.path,
+        alt: floorPlanImage.alt || floorPlanImage.title || '',
+        width: floorPlanImage.width || 1200,
+        height: floorPlanImage.height || 900,
+      }
+    : null;
+
+  // Before/after pairs — build clusters from paired images
+  const beforeAfterImages = images.filter(
+    (i) => i.kind === 'before' || i.kind === 'after',
+  );
+  const beforeAfterClusters = buildClusters(beforeAfterImages);
+  const pairClusters = beforeAfterClusters.filter((c) => c.kind === 'pair');
+
+  // Chorus = first pair; additional pairs shown below chorus
+  const chorusCluster = pairClusters[0] ?? null;
+  const additionalPairClusters = pairClusters.slice(1);
+
+  // Process images (sorted by sort column — already ordered by listWorkImages)
+  const processImages = images.filter((i) => i.kind === 'process');
+
+  // Detail images
+  const detailImages = images.filter((i) => i.kind === 'detail');
+  const detailClusters = buildClusters(detailImages);
+
+  // Build MDX embed closure (BeforeAfter inline component for bodyMdx)
   const pairData = buildPairLookup(images);
   const BeforeAfter = composeBeforeAfterEmbed(pairData);
-
   const body = await compileWorkMdx(work.bodyMdx, { BeforeAfter });
 
-  // Resolve human-readable labels (extracted from local constants to util).
-  const roomTypeLabel = resolveRoomTypeLabel(work.roomType);
-  const budgetLabel = resolveBudgetLabel(work.budgetRange ?? null);
-
-  // Build gallery clusters per kind (cover excluded from gallery).
-  const galleryItems = images.filter(
-    (r) => r.mediaAssetId !== work.coverMediaAssetId,
-  );
-  const beforeAfterClusters = buildClusters(
-    galleryItems.filter((r) => r.kind === 'before' || r.kind === 'after'),
-  );
-  const processClusters = buildClusters(
-    galleryItems.filter((r) => r.kind === 'process'),
-  );
-  const detailClusters = buildClusters(
-    galleryItems.filter((r) => r.kind === 'detail'),
-  );
-
-  // Sidebar renders null when all meta fields are absent. In that case skip
-  // the two-column grid class so the prose zone gets the full available width.
-  const hasSidebarContent =
-    !!work.style ||
-    !!work.yearCompleted ||
-    !!work.location ||
-    work.areaSqm != null ||
-    !!work.budgetRange ||
-    tagNames.length > 0;
-
-  // Shared sidebar props — reused for mobile strip + desktop panel.
-  const sidebarProps = {
-    roomTypeLabel,
-    style: work.style ?? null,
-    yearCompleted: work.yearCompleted ?? null,
-    location: work.location ?? null,
-    areaSqm: work.areaSqm ?? null,
-    budgetLabel,
-    tagNames,
-  };
-
+  // SEO structured data (unchanged from v1)
   const galleryPaths = images
     .filter((r) => r.mediaAssetId !== work.coverMediaAssetId)
     .map((r) => r.asset.path);
-
   const creativeWorkLd = buildCreativeWorkLd({
     work,
     coverPath: cover?.asset.path ?? null,
@@ -148,6 +164,23 @@ export default async function WorkDetailPage(props: {
     tagNames,
   });
   const breadcrumbLd = buildWorkBreadcrumbLd(work);
+
+  // areaSqm from DB comes as decimal string — parse to number for stat band
+  const areaSqmNum = work.areaSqm != null ? parseFloat(String(work.areaSqm)) : null;
+
+  // Chorus BeforeAfterImage pairs for WorkChorusBeforeAfter
+  const chorusPair =
+    chorusCluster && chorusCluster.kind === 'pair'
+      ? {
+          before: toBAImage(
+            chorusCluster.before,
+            `ก่อนแต่ง — ${work.title}`,
+          ),
+          after: toBAImage(chorusCluster.after, `หลังแต่ง — ${work.title}`),
+          caption:
+            chorusCluster.after.caption ?? chorusCluster.before.caption ?? null,
+        }
+      : null;
 
   return (
     <>
@@ -158,7 +191,7 @@ export default async function WorkDetailPage(props: {
        */}
       <article className="mx-auto max-w-7xl px-4 pt-6 pb-16 md:px-6 md:pt-8">
 
-        {/* ── Breadcrumb ─────────────────────────────────────────────────── */}
+        {/* ── S1: Breadcrumb ─────────────────────────────────────────────────── */}
         <nav aria-label="breadcrumb" className="text-xs text-muted-brand">
           <Link href="/" className="hover:text-ink">
             หน้าแรก
@@ -171,18 +204,27 @@ export default async function WorkDetailPage(props: {
         </nav>
 
         {/*
-         * ── H1 + Summary block ──────────────────────────────────────────────
-         * FadeUp wraps both elements as a single animated unit.
-         * max-w-3xl constrains the heading width so long titles don't spread
-         * to the full 7xl container on widescreen.
+         * ── S2 + S3 + S4: Eyebrow + H1 + Summary (one FadeUp unit) ───────────
+         * H1 bumped to text-5xl md:text-7xl per spec §S3 + §2 Pillar 1.
+         * Eyebrow omits null fields; roomType is always present.
          */}
-        <FadeUp className="mt-4 max-w-3xl">
+        <FadeUp className="mt-6 max-w-4xl">
           <header>
-            <h1 className="font-serif text-4xl font-bold tracking-tight text-ink leading-tight md:text-5xl">
+            {/* S2: Eyebrow */}
+            <p className="text-[11px] uppercase tracking-widest font-sans text-muted-brand">
+              {roomTypeLabel}
+              {work.style ? ` · ${work.style}` : ''}
+              {work.yearCompleted ? ` · ${work.yearCompleted}` : ''}
+            </p>
+
+            {/* S3: H1 */}
+            <h1 className="font-serif text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] text-ink mt-3">
               {work.title}
             </h1>
+
+            {/* S4: Summary */}
             {work.summary && (
-              <p className="mt-3 max-w-prose text-base text-muted-brand md:text-lg">
+              <p className="mt-3 max-w-prose text-base md:text-lg text-muted-brand leading-[1.65]">
                 {work.summary}
               </p>
             )}
@@ -190,113 +232,192 @@ export default async function WorkDetailPage(props: {
         </FadeUp>
 
         {/*
-         * ── Mobile meta strip ─────────────────────────────────────────────────
-         * Spec § Mobile mockup: strip appears after summary, before hero.
-         * Hidden on desktop (the sidebar is in the prose two-column zone below).
-         * -mx-4 extends the strip to the screen edge on mobile.
-         */}
-        {hasSidebarContent && (
-          <div className="mt-4 -mx-4 md:hidden">
-            <WorkMetaSidebar {...sidebarProps} slot="mobile" />
-          </div>
-        )}
-
-        {/*
-         * ── Hero image ────────────────────────────────────────────────────────
-         * LCP element — no animation wrapper per spec § Motion plan.
-         * -mx-4/-mx-6 breaks out of the page gutter to full max-w-7xl width.
-         * aspect-[3/2] mobile → aspect-[2/1] desktop (controlled inside WorkHero).
+         * ── S5: Hero image ────────────────────────────────────────────────────
+         * v2.2: aspect-[16/9] mobile → aspect-[21/9] desktop (cinematic).
+         * rounded-none: full-bleed, no border radius (spec §S5, §21 #5).
+         * -mx-4/-mx-6 breaks out of the page gutter.
+         * No animation wrapper — LCP element (spec §19 + motion.md).
          */}
         {cover && (
-          <div className="-mx-4 md:-mx-6">
+          <div className="mt-8 -mx-4 md:-mx-6">
             <WorkHero
               src={cover.asset.path}
               alt={
-                // Hero is the LCP image and the strongest Google Image
-                // Search signal on the page. When admin leaves asset.alt
-                // blank, build a descriptive fallback from the work's own
-                // room + style data (per .claude/rules/seo.md § Image SEO).
                 cover.asset.alt ||
-                `${work.title} — ${roomTypeLabel}${
-                  work.style ? `, สไตล์ ${work.style}` : ''
-                }`
+                `${work.title} — ${roomTypeLabel}${work.style ? `, สไตล์ ${work.style}` : ''}`
               }
+              aspectClass="aspect-[16/9] md:aspect-[21/9] md:mt-0"
+              className="rounded-none mt-0"
+            />
+          </div>
+        )}
+
+        {/* ── S6: Stat band ─────────────────────────────────────────────────── */}
+        <WorkStatBand
+          areaSqm={areaSqmNum}
+          durationDays={work.durationDays ?? null}
+          budgetRange={work.budgetRange ?? null}
+          yearCompleted={work.yearCompleted ?? null}
+        />
+
+        {/*
+         * ── Chapter 01: โจทย์ / The Brief ───────────────────────────────────
+         * mt-24 between chapters per spec §2 Pillar 3 (applied at chapter
+         * container level, not inside WorkChapterDivider itself).
+         */}
+        <div className="mt-24">
+          <FadeUp>
+            <WorkChapterDivider number="01" th="โจทย์" en="The Brief" />
+          </FadeUp>
+
+          <FadeUp className="mt-6">
+            <WorkChapterBody firstChar={firstBodyChar}>
+              {body}
+            </WorkChapterBody>
+          </FadeUp>
+        </div>
+
+        {/*
+         * ── Chapter 02: การเปลี่ยนแปลง / Before & After ─────────────────────
+         * Entire chapter (divider + chorus + additional pairs + pull quote)
+         * is skipped when there are no before/after pairs (spec §22).
+         * Chapter number stays "02" even when skipped — stable numbering §25.
+         */}
+        {chorusPair && (
+          <div className="mt-24">
+            <FadeUp>
+              <WorkChapterDivider
+                number="02"
+                th="การเปลี่ยนแปลง"
+                en="Before & After"
+              />
+            </FadeUp>
+
+            {/* Chorus — first pair, full-bleed, no rounding */}
+            <div className="mt-6">
+              <WorkChorusBeforeAfter pair={chorusPair} />
+            </div>
+
+            {/* Additional pairs — smaller, side-by-side on desktop */}
+            {additionalPairClusters.length > 0 && (
+              <div className="mt-8 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+                {additionalPairClusters.map((c) => {
+                  if (c.kind !== 'pair') return null;
+                  const before = toBAImage(c.before, `ก่อนแต่ง — ${work.title}`);
+                  const after = toBAImage(c.after, `หลังแต่ง — ${work.title}`);
+                  const caption = c.after.caption ?? c.before.caption ?? null;
+                  return (
+                    <FadeUp key={`addl-${c.pairId}`}>
+                      <BeforeAfterCard
+                        before={before}
+                        after={after}
+                        caption={caption}
+                        className="rounded-2xl"
+                      />
+                    </FadeUp>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Pull quote — skips when clientQuote is null */}
+            <WorkPullQuote
+              quote={work.clientQuote ?? null}
+              clientName={work.clientName ?? null}
             />
           </div>
         )}
 
         {/*
-         * ── Before & After section ─────────────────────────────────────────
-         * Spec § Desktop mockup: before/after appears immediately after hero,
-         * before the MDX prose body. Returns null when empty.
-         * -mx-4/-mx-6 breaks out of the page gutter.
+         * ── Chapter 03: แนวคิดและวัสดุ / Concept ─────────────────────────────
+         * Chapter number stays "03" regardless of whether chapter 02 rendered.
+         * Left column is EMPTY on desktop — bodyMdx rendered once in ch01.
+         * WorkConceptSection returns null when there is nothing to show.
          */}
-        <div className="-mx-4 md:-mx-6">
-          <WorkGallerySection
-            label={{ th: 'ก่อน/หลัง', en: 'Before & After' }}
-            clusters={beforeAfterClusters}
-            displayMode="before-after"
+        <div className="mt-24">
+          <FadeUp>
+            <WorkChapterDivider
+              number="03"
+              th="แนวคิดและวัสดุ"
+              en="Concept"
+            />
+          </FadeUp>
+
+          <WorkConceptSection
+            palette={work.materials ?? null}
+            floorPlanImage={floorPlanForSection}
+            sidebarRelated={sidebarRelated}
+            wordCount={wordCount}
             workTitle={work.title}
           />
         </div>
 
         {/*
-         * ── Two-column zone: MDX prose body + desktop sticky sidebar ────────
-         * Left column: prose body (max-w-prose constrained inside the 1fr col).
-         * Right column: sticky sidebar (16rem / w-64) — desktop only via slot="desktop".
-         * Sidebar `sticky top-24 self-start` pins when the prose column scrolls.
-         * When hasSidebarContent=false, the grid class is omitted so prose gets full width.
-         * Placed after before/after per spec § section ordering.
+         * ── Chapter 04: กระบวนการ / Process ─────────────────────────────────
+         * Entire chapter skipped when processImages is empty (spec §S15 null fallback).
          */}
-        <div className="mx-auto mt-12 max-w-5xl md:mt-16">
-          <div
-            className={
-              hasSidebarContent
-                ? 'grid grid-cols-1 md:grid-cols-[1fr_16rem] gap-x-12 items-start'
-                : ''
-            }
-          >
-            {/* Left: prose body */}
+        {processImages.length > 0 && (
+          <div className="mt-24">
             <FadeUp>
-              <WorkProseSection body={body} />
+              <WorkChapterDivider
+                number="04"
+                th="กระบวนการ"
+                en="Process"
+              />
             </FadeUp>
 
-            {/* Right: desktop sidebar (slot="desktop" → hidden md:block) */}
-            {hasSidebarContent && (
-              <WorkMetaSidebar {...sidebarProps} slot="desktop" />
-            )}
+            <div className="mt-8 max-w-5xl mx-auto">
+              <WorkProcessTimeline
+                images={processImages}
+                workTitle={work.title}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/*
-         * ── Process & Detail gallery sections ─────────────────────────────
-         * Spec § Desktop mockup: process grid after prose body, detail after that.
-         * Each returns null when its kind group is empty.
-         * -mx-4/-mx-6 breaks out of the page gutter.
+         * ── Chapter 05: รายละเอียด / Details ────────────────────────────────
+         * Entire chapter skipped when detailClusters is empty.
+         * Uses existing WorkGallerySection (no modification to that component).
          */}
-        <div className="-mx-4 md:-mx-6">
-          <WorkGallerySection
-            label={{ th: 'กระบวนการ', en: 'Process' }}
-            clusters={processClusters}
-            displayMode="process-grid"
-            workTitle={work.title}
-          />
-          <WorkGallerySection
-            label={{ th: 'รายละเอียด', en: 'Details' }}
-            clusters={detailClusters}
-            displayMode="detail-editorial"
-            workTitle={work.title}
-          />
-        </div>
+        {detailClusters.length > 0 && (
+          <div className="mt-24">
+            <FadeUp>
+              <WorkChapterDivider
+                number="05"
+                th="รายละเอียด"
+                en="Details"
+              />
+            </FadeUp>
+
+            <div className="-mx-4 md:-mx-6 mt-8">
+              <WorkGallerySection
+                label={{ th: 'รายละเอียด', en: 'Details' }}
+                clusters={detailClusters}
+                displayMode="detail-editorial"
+                workTitle={work.title}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── S18: Designer's note ─────────────────────────────────────────── */}
+        <WorkDesignerNote note={work.designerNote ?? null} />
+
+        {/* ── S19: CTA card ────────────────────────────────────────────────── */}
+        <WorkCTACard style={work.style ?? null} />
+
+        {/* ── S20: Related works (bottom discovery grid) ─────────────────── */}
+        <WorkRelatedSection works={bottomRelated} />
 
         {/*
-         * ── Tags row (mobile only) ────────────────────────────────────────────
-         * Desktop: tags appear inside the sidebar. Mobile: rendered here at
-         * page bottom since the sidebar (slot="desktop") is hidden on mobile.
+         * ── S21: Tags row ─────────────────────────────────────────────────────
+         * v2: shown at page bottom for both mobile and desktop
+         * (v1 had md:hidden — removed per spec §S21).
          */}
         {tagNames.length > 0 && (
           <ul
-            className="mt-10 flex flex-wrap gap-2 md:hidden"
+            className="mt-10 flex flex-wrap gap-2 px-0"
             aria-label="แท็ก"
           >
             {tagNames.map((name) => (
@@ -311,6 +432,7 @@ export default async function WorkDetailPage(props: {
         )}
       </article>
 
+      {/* JSON-LD structured data — unchanged from v1 (SEO-audited and locked) */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkLd) }}
@@ -322,6 +444,8 @@ export default async function WorkDetailPage(props: {
     </>
   );
 }
+
+// ── Helpers (unchanged from v1) ───────────────────────────────────────────────
 
 function buildPairLookup(
   images: Awaited<ReturnType<typeof listWorkImages>>,
@@ -355,6 +479,20 @@ function toBA(row: {
   return {
     src: row.asset.path,
     alt: row.asset.alt || row.asset.title || '',
+    width: row.asset.width || 1600,
+    height: row.asset.height || 1000,
+  };
+}
+
+function toBAImage(
+  row: {
+    asset: { path: string; alt: string; title: string; width: number; height: number };
+  },
+  fallbackAlt: string,
+): BeforeAfterImage {
+  return {
+    src: row.asset.path,
+    alt: row.asset.alt || row.asset.title || fallbackAlt,
     width: row.asset.width || 1600,
     height: row.asset.height || 1000,
   };

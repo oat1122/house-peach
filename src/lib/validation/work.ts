@@ -24,7 +24,7 @@ export const budgetRanges = [
 ] as const;
 export type BudgetRange = (typeof budgetRanges)[number];
 
-export const workImageKinds = ['before', 'after', 'process', 'detail'] as const;
+export const workImageKinds = ['before', 'after', 'process', 'detail', 'plan'] as const;
 export type WorkImageKind = (typeof workImageKinds)[number];
 
 export const WorkInsert = z.object({
@@ -48,6 +48,21 @@ export const WorkInsert = z.object({
   tagIds: z.array(z.coerce.number().int().positive()).default([]),
   status: z.enum(contentStatuses).default('draft'),
   publishedAt: z.coerce.date().nullable().optional(),
+  // v2.2 editorial fields
+  durationDays: z.coerce.number().int().positive().max(3650).nullable().optional(),
+  clientQuote: z.string().max(500).nullable().optional(),
+  clientName: z.string().max(80).nullable().optional(),
+  designerNote: z.string().max(1000).nullable().optional(),
+  materials: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(60),
+        colorHex: HexColor,
+      }),
+    )
+    .max(8)
+    .nullable()
+    .optional(),
 });
 export type WorkInsert = z.infer<typeof WorkInsert>;
 

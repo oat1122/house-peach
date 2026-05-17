@@ -41,6 +41,7 @@ const KIND_LABELS: Record<WorkImageKind, string> = {
   before: 'ก่อนแต่ง',
   process: 'ระหว่างทำ',
   detail: 'รายละเอียด',
+  plan: 'แปลน',
 };
 
 export type GalleryRow = {
@@ -487,6 +488,11 @@ function GalleryRowItem({
           {busy ? <Spinner className="size-3" /> : <Star className="size-3" aria-hidden />}
           <span>{row.isCover ? 'ปก' : 'ตั้งปก'}</span>
         </Button>
+        {/* isFeatured applies only to process/detail kinds.
+            'plan' images render as a single floor-plan thumb in chapter 03
+            (first by sort order) — featured toggle is not applicable.
+            'before'/'after' images are shown by kind grouping, not by
+            featured flag, so they also do not need this control. */}
         {(row.kind === 'process' || row.kind === 'detail') && (
           <Button
             type="button"

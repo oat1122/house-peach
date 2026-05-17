@@ -3,6 +3,8 @@ import {
   boolean,
   decimal,
   index,
+  int,
+  json,
   mediumtext,
   mysqlEnum,
   mysqlTable,
@@ -43,6 +45,7 @@ export const workImageKindValues = [
   'after',
   'process',
   'detail',
+  'plan',
 ] as const;
 export type WorkImageKind = (typeof workImageKindValues)[number];
 
@@ -66,6 +69,13 @@ export const works = mysqlTable(
     tone: varchar('tone', { length: 7 }).notNull().default('#f5d6c0'),
     accent: varchar('accent', { length: 7 }).notNull().default('#a87856'),
     status: mysqlEnum('status', contentStatusValues).notNull().default('draft'),
+    // v2.2 editorial fields — all nullable, zero migration risk for existing rows
+    durationDays: int('duration_days'),
+    clientQuote: mediumtext('client_quote'),
+    clientName: varchar('client_name', { length: 80 }),
+    designerNote: mediumtext('designer_note'),
+    // JSON shape: Array<{ name: string; colorHex: string }>. Max 8 items enforced at zod layer.
+    materials: json('materials').$type<Array<{ name: string; colorHex: string }>>(),
     publishedAt: timestamp('published_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),

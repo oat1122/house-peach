@@ -2,7 +2,11 @@ import Image from 'next/image';
 
 /**
  * RSC — Renders the work cover image as the LCP hero element.
- * Mobile: `aspect-[3/2]` · Desktop (md+): `aspect-[2/1]`
+ *
+ * v1 defaults: mobile `aspect-[3/2]` · desktop `aspect-[2/1]` · `rounded-2xl`
+ * v2 override: pass `aspectClass="aspect-[16/9] md:aspect-[21/9]"` and
+ *   `className="rounded-none"` for the editorial cinematic hero (spec §S5).
+ *
  * Aspect is overridden by CSS; stored width/height are only for
  * `next/image` srcset generation (passed via `fill`'s sizes attribute).
  */
@@ -10,15 +14,27 @@ type Props = {
   src: string;
   /** Stored asset alt; falls back to work title so alt is never empty. */
   alt: string;
+  /**
+   * Tailwind aspect + margin-top classes.
+   * Default: `"aspect-[3/2] md:aspect-[2/1] md:mt-10"` (v1 behaviour).
+   * v2 page passes `"aspect-[16/9] md:aspect-[21/9] md:mt-0"`.
+   */
+  aspectClass?: string;
   className?: string;
 };
 
-export function WorkHero({ src, alt, className }: Props) {
+export function WorkHero({
+  src,
+  alt,
+  aspectClass = 'aspect-[3/2] md:aspect-[2/1] md:mt-10',
+  className,
+}: Props) {
   return (
     <div
       className={
         'relative mt-6 w-full overflow-hidden rounded-2xl bg-bg2 ' +
-        'aspect-[3/2] md:aspect-[2/1] md:mt-10 ' +
+        aspectClass +
+        ' ' +
         (className ?? '')
       }
     >

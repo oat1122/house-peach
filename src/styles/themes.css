@@ -39,6 +39,48 @@
   --brand-accent: #8fa088;
 }
 
+/* ── v2.2 Editorial chapter divider ────────────────────────────────────────
+ * `.chapter-divider` renders as a flex row with flanking hairlines.
+ * The hairline colour uses `var(--line)` which maps to each preset's border
+ * token — correct across all 4 presets (peach / cream / sage / ink).
+ * Spec §7 chapter divider markup pattern.
+ */
+.chapter-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chapter-divider__line {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+/* ── v2.2 Drop cap ─────────────────────────────────────────────────────────
+ * Applied to the first `<p>` inside `.chapter-body` via `::first-letter`.
+ * Uses `var(--brand-accent)` — WCAG large-text threshold at ~54px; a11y
+ * reviewer should verify contrast ratio in staging (§18 note).
+ *
+ * `.no-drop-cap` suppresses the effect on Thai paragraphs beginning with
+ * above-base vowel marks (เ แ โ ใ ไ  U+0E40–U+0E44) where WebKit floats
+ * the vowel mark alone, detaching it from its consonant (spec §7, §21 #1).
+ */
+.chapter-body > p:first-child::first-letter {
+  font-family: var(--font-serif);
+  font-size: 3.5em;
+  line-height: 0.8;
+  float: left;
+  margin-right: 0.08em;
+  margin-top: 0.05em;
+  color: var(--brand-accent);
+  font-weight: 700;
+}
+
+.no-drop-cap > p:first-child::first-letter {
+  all: unset;
+}
+
 /* Dark mode — applies when next-themes adds `.dark` to <html>,
  * OR when an explicit [data-theme="ink"] preset is set. */
 .dark,

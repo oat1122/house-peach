@@ -4,9 +4,14 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import {
   Controller,
+  useFieldArray,
   useForm,
+  useWatch,
+  type Control,
+  type FieldErrors,
   type Resolver,
   type SubmitHandler,
+  type UseFormRegister,
 } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
@@ -14,6 +19,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 // infers for the form values, so the generic Resolver returned by zodResolver
 // trips the assignability check. Cast through a typed Resolver — runtime
 // behavior is unchanged; we just tell the type system the brands round-trip.
+
+import { X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -119,6 +126,12 @@ export function WorkForm({
     tagIds: defaultValues?.tagIds ?? [],
     status: defaultValues?.status ?? 'draft',
     publishedAt: defaultValues?.publishedAt ?? null,
+    // v2.2 editorial fields — treat DB null as empty for the form
+    durationDays: defaultValues?.durationDays ?? null,
+    clientQuote: defaultValues?.clientQuote ?? null,
+    clientName: defaultValues?.clientName ?? null,
+    designerNote: defaultValues?.designerNote ?? null,
+    materials: defaultValues?.materials ?? [],
   };
 
   const {
@@ -143,11 +156,18 @@ export function WorkForm({
 
   const submit: SubmitHandler<WorkInsert> = (data) => {
     setServerError(null);
+    // Normalise: RHF stores materials as [] when no items are added,
+    // but the DB column expects null for "no materials". Convert back.
+    const payload: WorkInsert = {
+      ...data,
+      materials:
+        data.materials && data.materials.length > 0 ? data.materials : null,
+    };
     startSaving(async () => {
       const result =
         mode === 'new'
-          ? await createWorkAction(data)
-          : await updateWorkAction({ ...data, id: defaultValues!.id! });
+          ? await createWorkAction(payload)
+          : await updateWorkAction({ ...payload, id: defaultValues!.id! });
       if (!result.ok) {
         setServerError(result.error);
         if (result.fieldErrors) {
@@ -500,6 +520,75 @@ export function WorkForm({
           )}
         </Section>
 
+        <Section title="เนื้อหาเพิ่มเติม · Editorial">
+          <Field id="durationDays" label="ระยะเวลา (วัน)" error={errors.durationDays?.message}>
+            <Input
+              id="durationDays"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={3650}
+              placeholder="เช่น 45"
+              {...register('durationDays', {
+                setValueAs: (v) =>
+                  v === '' || v === null || Number.isNaN(Number(v)) ? null : Number(v),
+              })}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              จะแสดงเป็น &quot;45 วัน&quot;, &quot;6 สัปดาห์&quot; หรือ &quot;3 เดือน&quot; อัตโนมัติ
+            </p>
+          </Field>
+
+          <Field id="clientQuote" label="คำพูดจากลูกค้า" error={errors.clientQuote?.message}>
+            <Textarea
+              id="clientQuote"
+              {...register('clientQuote', {
+                setValueAs: (v) => (v === '' ? null : v ?? null),
+              })}
+              maxLength={500}
+              rows={4}
+              placeholder="ใส่คำพูดโดยไม่ต้องมีเครื่องหมายคำพูด"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              จะแสดงเป็น Pull Quote กลางหน้า
+            </p>
+          </Field>
+
+          <Field id="clientName" label="ชื่อลูกค้า" error={errors.clientName?.message}>
+            <Input
+              id="clientName"
+              {...register('clientName', {
+                setValueAs: (v) => (v === '' ? null : v ?? null),
+              })}
+              maxLength={80}
+              placeholder="เช่น คุณสมศรี หรือ เจ้าของบ้าน"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              แสดงเป็นที่มาของคำพูด (— คุณสมศรี)
+            </p>
+          </Field>
+
+          <Field id="designerNote" label="หมายเหตุจากนักออกแบบ" error={errors.designerNote?.message}>
+            <Textarea
+              id="designerNote"
+              {...register('designerNote', {
+                setValueAs: (v) => (v === '' ? null : v ?? null),
+              })}
+              maxLength={1000}
+              rows={6}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              จะแสดงก่อน CTA card พร้อมลายเซ็น &quot;— ทีม house-peach&quot;
+            </p>
+          </Field>
+
+          <MaterialsField
+            control={control}
+            register={register}
+            errors={errors}
+          />
+        </Section>
+
         <Section title="สถานะ">
           <Field id="status" label="สถานะ" error={errors.status?.message}>
             <Controller
@@ -678,4 +767,98 @@ function ColorField({
       </div>
     </div>
   );
+}
+
+function MaterialsField({
+  control,
+  register,
+  errors,
+}: {
+  control: Control<WorkInsert>;
+  register: UseFormRegister<WorkInsert>;
+  errors: FieldErrors<WorkInsert>;
+}) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'materials' as never,
+  });
+
+  const MAX_MATERIALS = 8;
+  // Safe cast: materials errors are per-item objects when present
+  const materialErrors = errors.materials as
+    | Array<{ name?: { message?: string }; colorHex?: { message?: string } } | undefined>
+    | undefined;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-foreground">
+        วัสดุที่ใช้ (สูงสุด {MAX_MATERIALS})
+      </p>
+      {fields.length > 0 && (
+        <ul className="space-y-2">
+          {fields.map((field, index) => {
+            const nameError = materialErrors?.[index]?.name?.message;
+            return (
+              <li key={field.id} className="flex items-center gap-2">
+                <Input
+                  {...register(`materials.${index}.name` as const)}
+                  placeholder="ชื่อวัสดุ เช่น Travertine"
+                  maxLength={60}
+                  className="h-8 flex-1 text-xs"
+                  aria-label={`ชื่อวัสดุที่ ${index + 1}`}
+                  aria-invalid={!!nameError}
+                />
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <input
+                    {...register(`materials.${index}.colorHex` as const)}
+                    type="color"
+                    className="h-8 w-10 cursor-pointer rounded border border-input bg-transparent"
+                    aria-label={`สีวัสดุที่ ${index + 1}`}
+                  />
+                  <MaterialHexDisplay control={control} index={index} />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => remove(index)}
+                  aria-label={`ลบวัสดุที่ ${index + 1}`}
+                  className="shrink-0 text-muted-foreground hover:text-destructive"
+                >
+                  <X className="size-3" aria-hidden />
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() =>
+          append({ name: '', colorHex: '#cccccc' as NonNullable<NonNullable<WorkInsert['materials']>[number]>['colorHex'] })
+        }
+        disabled={fields.length >= MAX_MATERIALS}
+        className="text-xs"
+      >
+        + เพิ่มวัสดุ
+      </Button>
+      <p className="text-[11px] text-muted-foreground">
+        ใช้เพิ่ม chip palette ใน Concept section ของหน้าโปรเจกต์
+      </p>
+    </div>
+  );
+}
+
+/** Shows the live hex value of a material's colorHex — reads via useWatch. */
+function MaterialHexDisplay({
+  control,
+  index,
+}: {
+  control: Control<WorkInsert>;
+  index: number;
+}) {
+  const hex = useWatch({ control, name: `materials.${index}.colorHex` as const });
+  return <code className="w-[5.5rem] text-[10px] text-muted-foreground">{hex ?? '#cccccc'}</code>;
 }

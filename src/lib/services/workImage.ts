@@ -20,7 +20,7 @@ import type {
 export type WorkImageListItem = {
   workId: number;
   mediaAssetId: number;
-  kind: 'before' | 'after' | 'process' | 'detail';
+  kind: 'before' | 'after' | 'process' | 'detail' | 'plan';
   pairId: number | null;
   caption: string | null;
   sort: number;

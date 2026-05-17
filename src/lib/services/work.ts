@@ -1,12 +1,18 @@
 import 'server-only';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, ne, notInArray, or, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { bumpTag, bumpWorkPaths, tags as cacheTags } from '@/lib/cache-tags';
 import { mediaAssets } from '@/lib/db/schema/mediaAssets';
 import { tags as tagsTable } from '@/lib/db/schema/tags';
-import { works, workTags, type WorkRow } from '@/lib/db/schema/works';
-import { workImages } from '@/lib/db/schema/works';
+import {
+  works,
+  workImages,
+  workTags,
+  type BudgetRange,
+  type RoomType,
+  type WorkRow,
+} from '@/lib/db/schema/works';
 import type { WorkInsert, WorkUpdate } from '@/lib/validation/work';
 
 /**
@@ -33,7 +39,7 @@ export async function listWorks(): Promise<WorkListItem[]> {
     .limit(500);
 
   return rows.map((r) => ({
-    ...r.work,
+    ...normalizeWorkRow(r.work),
     coverPath: r.coverPath,
     coverAlt: r.coverAlt,
     tagCount: Number(r.tagCount ?? 0),
@@ -44,6 +50,28 @@ export type WorkDetail = WorkRow & {
   tagIds: number[];
 };
 
+/**
+ * MariaDB stores `json` columns as longtext with a CHECK(json_valid()) and
+ * the mysql2 driver returns them as raw strings — Drizzle's `$type<>()` is
+ * compile-time only and does NOT parse on read. Every code path that reads
+ * `works.materials` must run this normaliser, otherwise consumers will hit
+ * `materials.map is not a function` at runtime.
+ *
+ * Acts on a mutated copy — never throws (defensive: if the stored JSON is
+ * somehow malformed, return null rather than crash the page).
+ */
+function normalizeWorkRow<T extends WorkRow>(row: T): T {
+  if (typeof row.materials === 'string') {
+    try {
+      const parsed = JSON.parse(row.materials);
+      return { ...row, materials: Array.isArray(parsed) ? parsed : null };
+    } catch {
+      return { ...row, materials: null };
+    }
+  }
+  return row;
+}
+
 export async function getWorkById(id: number): Promise<WorkDetail | null> {
   const [work] = await db.select().from(works).where(eq(works.id, id)).limit(1);
   if (!work) return null;
@@ -51,7 +79,7 @@ export async function getWorkById(id: number): Promise<WorkDetail | null> {
     .select({ tagId: workTags.tagId })
     .from(workTags)
     .where(eq(workTags.workId, id));
-  return { ...work, tagIds: tagRows.map((r) => r.tagId) };
+  return { ...normalizeWorkRow(work), tagIds: tagRows.map((r) => r.tagId) };
 }
 
 export async function getPublishedWorkBySlug(
@@ -80,7 +108,7 @@ export async function getPublishedWorkBySlug(
     .select({ tagId: workTags.tagId })
     .from(workTags)
     .where(eq(workTags.workId, work.id));
-  return { ...work, tagIds: tagRows.map((r) => r.tagId) };
+  return { ...normalizeWorkRow(work), tagIds: tagRows.map((r) => r.tagId) };
 }
 
 export class WorkSlugTakenError extends Error {
@@ -132,6 +160,13 @@ export async function createWork(input: WorkInsert): Promise<number> {
         input.status === 'published'
           ? (input.publishedAt ?? new Date())
           : null,
+      // v2.2 editorial fields — all nullable. createWork persists whatever the
+      // form sent; updateWork (below) is the long-term write path.
+      durationDays: input.durationDays ?? null,
+      clientQuote: input.clientQuote ?? null,
+      clientName: input.clientName ?? null,
+      designerNote: input.designerNote ?? null,
+      materials: input.materials ?? null,
     });
     const insertId = (result as unknown as { insertId?: number }[])[0]?.insertId;
     if (!insertId) throw new Error('Failed to insert work');
@@ -174,6 +209,18 @@ export async function updateWork(input: WorkUpdate): Promise<void> {
     // it). If a future flow needs to set it here, do an explicit unset first.
     if (input.tone !== undefined) set.tone = input.tone;
     if (input.accent !== undefined) set.accent = input.accent;
+    // v2.2 editorial fields — undefined = field omitted from form, leave DB
+    // value untouched; null = admin cleared the field, persist as NULL.
+    if (input.durationDays !== undefined)
+      set.durationDays = input.durationDays ?? null;
+    if (input.clientQuote !== undefined)
+      set.clientQuote = input.clientQuote ?? null;
+    if (input.clientName !== undefined)
+      set.clientName = input.clientName ?? null;
+    if (input.designerNote !== undefined)
+      set.designerNote = input.designerNote ?? null;
+    if (input.materials !== undefined)
+      set.materials = input.materials ?? null;
     if (input.status !== undefined) {
       set.status = input.status;
       if (input.status === 'published') {
@@ -237,6 +284,121 @@ async function ensureTagsExist(
   }
 }
 
+/** Compact shape returned by listSimilarWorks — consumed by WorkCardCompact. */
+export type WorkCompact = {
+  id: number;
+  slug: string;
+  title: string;
+  coverPath: string | null;
+  roomType: RoomType;
+  style: string | null;
+  yearCompleted: number | null;
+};
+
+/**
+ * Find published works similar to the given work (spec §14a).
+ * Sequential fallback chain — stops as soon as we have enough results:
+ *   1. Same style AND same roomType
+ *   2. Same style OR same roomType
+ *   3. Shares ≥1 tag (ordered by number of shared tags DESC)
+ *   4. Return whatever we have (may be fewer than limit)
+ */
+export async function listSimilarWorks(
+  workId: number,
+  roomType: RoomType,
+  style: string | null,
+  limit: number,
+): Promise<WorkCompact[]> {
+  const base = and(eq(works.status, 'published'), ne(works.id, workId));
+
+  const selectShape = {
+    id: works.id,
+    slug: works.slug,
+    title: works.title,
+    coverPath: mediaAssets.path,
+    roomType: works.roomType,
+    style: works.style,
+    yearCompleted: works.yearCompleted,
+  };
+
+  const withCover = db
+    .select(selectShape)
+    .from(works)
+    .leftJoin(mediaAssets, eq(mediaAssets.id, works.coverMediaAssetId));
+
+  // Fallback 1: exact match
+  if (style) {
+    const rows = await withCover
+      .where(and(base, eq(works.roomType, roomType), eq(works.style, style)))
+      .orderBy(desc(works.publishedAt))
+      .limit(limit);
+    if (rows.length >= limit) return rows;
+  }
+
+  // Fallback 2: room OR style
+  const orRows = await withCover
+    .where(
+      and(base, or(eq(works.roomType, roomType), style ? eq(works.style, style) : sql`FALSE`)),
+    )
+    .orderBy(desc(works.publishedAt))
+    .limit(limit);
+  if (orRows.length >= limit) return orRows;
+
+  // Fallback 3: tag overlap — aggregate shared tag count
+  const tagRows = await db
+    .select({ ...selectShape, sharedTags: count(workTags.tagId) })
+    .from(works)
+    .leftJoin(mediaAssets, eq(mediaAssets.id, works.coverMediaAssetId))
+    .innerJoin(workTags, eq(workTags.workId, works.id))
+    .where(
+      and(
+        base,
+        inArray(
+          workTags.tagId,
+          db.select({ tagId: workTags.tagId }).from(workTags).where(eq(workTags.workId, workId)),
+        ),
+      ),
+    )
+    .groupBy(works.id)
+    .orderBy(desc(count(workTags.tagId)), desc(works.publishedAt))
+    .limit(limit);
+
+  return tagRows;
+}
+
+/**
+ * Latest published works for bottom discovery grid (spec §14b).
+ * Excludes the current work and any works already shown in the sidebar.
+ * Returns up to `limit` results — fewer is acceptable (spec §22).
+ */
+export async function listLatestOtherWorks(
+  workId: number,
+  excludeIds: number[],
+  limit: number,
+): Promise<WorkListItem[]> {
+  const allExcluded = [workId, ...excludeIds];
+
+  const rows = await db
+    .select({
+      work: works,
+      coverPath: mediaAssets.path,
+      coverAlt: mediaAssets.alt,
+      tagCount: sql<number>`(SELECT COUNT(*) FROM ${workTags} WHERE ${workTags.workId} = ${works.id})`,
+    })
+    .from(works)
+    .leftJoin(mediaAssets, eq(mediaAssets.id, works.coverMediaAssetId))
+    .where(and(eq(works.status, 'published'), notInArray(works.id, allExcluded)))
+    .orderBy(desc(works.publishedAt))
+    .limit(limit);
+
+  return rows.map((r) => ({
+    ...normalizeWorkRow(r.work),
+    coverPath: r.coverPath,
+    coverAlt: r.coverAlt,
+    tagCount: Number(r.tagCount ?? 0),
+  }));
+}
+
 /**
  * List tags admin can pick when authoring a work — kind ∈ {work, both}.
  */
@@ -255,3 +417,114 @@ export async function listWorkTagOptions() {
 
 /** Silence the unused import — workImages is exported here so Phase B can re-use the column references. */
 export const _workImagesRef = workImages;
+
+// ── Public listing queries ─────────────────────────────────────
+
+/**
+ * Minimal shape required by the /works listing page cards.
+ * Excludes heavy fields (bodyMdx, tone, accent, materials) not needed for the listing.
+ */
+export type WorkPublicListItem = {
+  id: number;
+  slug: string;
+  title: string;
+  summary: string;
+  roomType: RoomType;
+  style: string | null;
+  location: string | null;
+  yearCompleted: number | null;
+  areaSqm: string | null;
+  budgetRange: BudgetRange | null;
+  durationDays: number | null;
+  coverPath: string | null;
+  coverAlt: string | null;
+};
+
+/**
+ * Paginated list of published works for the public /works listing page.
+ * Filters compose with AND. tagSlug filter: if the tag doesn't exist, returns empty.
+ * Ordering: published_at DESC, created_at DESC (stability on same publish date).
+ */
+export async function listPublishedWorks(input: {
+  page: number;
+  limit: number;
+  roomType?: RoomType;
+  style?: string;
+  tagSlug?: string;
+}): Promise<{ items: WorkPublicListItem[]; total: number; hasMore: boolean }> {
+  const page = Math.max(1, input.page);
+  const limit = Math.min(50, Math.max(1, input.limit));
+  const offset = (page - 1) * limit;
+
+  // Resolve tagSlug → tagId early; return empty if the tag doesn't exist.
+  let tagWorkIds: number[] | undefined;
+  if (input.tagSlug !== undefined) {
+    const [tagRow] = await db
+      .select({ id: tagsTable.id })
+      .from(tagsTable)
+      .where(eq(tagsTable.slug, input.tagSlug))
+      .limit(1);
+    if (!tagRow) return { items: [], total: 0, hasMore: false };
+    const tagLinks = await db
+      .select({ workId: workTags.workId })
+      .from(workTags)
+      .where(eq(workTags.tagId, tagRow.id));
+    tagWorkIds = tagLinks.map((r) => r.workId);
+    if (tagWorkIds.length === 0) return { items: [], total: 0, hasMore: false };
+  }
+
+  const baseFilter = and(
+    eq(works.status, 'published'),
+    input.roomType !== undefined ? eq(works.roomType, input.roomType) : undefined,
+    input.style !== undefined ? eq(works.style, input.style) : undefined,
+    tagWorkIds !== undefined ? inArray(works.id, tagWorkIds) : undefined,
+  );
+
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(works)
+    .where(baseFilter);
+
+  const rows = await db
+    .select({
+      id: works.id,
+      slug: works.slug,
+      title: works.title,
+      summary: works.summary,
+      roomType: works.roomType,
+      style: works.style,
+      location: works.location,
+      yearCompleted: works.yearCompleted,
+      areaSqm: works.areaSqm,
+      budgetRange: works.budgetRange,
+      durationDays: works.durationDays,
+      coverPath: mediaAssets.path,
+      coverAlt: mediaAssets.alt,
+    })
+    .from(works)
+    .leftJoin(mediaAssets, eq(mediaAssets.id, works.coverMediaAssetId))
+    .where(baseFilter)
+    .orderBy(desc(works.publishedAt), desc(works.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  return {
+    items: rows.map((r) => ({ ...r, areaSqm: r.areaSqm ?? null })),
+    total: Number(total),
+    hasMore: page * limit < Number(total),
+  };
+}
+
+/**
+ * Distinct style values from all published works, sorted A–Z.
+ * Used to populate the style filter <Select> on the /works listing page.
+ * Returns [] when no published works exist.
+ */
+export async function listDistinctWorkStyles(): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ style: works.style })
+    .from(works)
+    .where(eq(works.status, 'published'))
+    .orderBy(asc(works.style));
+  return rows.map((r) => r.style);
+}

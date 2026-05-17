@@ -55,6 +55,16 @@ export default async function EditWorkPage(props: {
     tagIds: work.tagIds,
     status: work.status,
     publishedAt: work.publishedAt ?? null,
+    // v2.2 editorial fields — DB → form. `materials` is normalised to an
+    // array by normalizeWorkRow() in the service layer (MariaDB returns
+    // JSON columns as strings; Drizzle's $type<>() is compile-time only).
+    durationDays: work.durationDays ?? null,
+    clientQuote: work.clientQuote ?? null,
+    clientName: work.clientName ?? null,
+    designerNote: work.designerNote ?? null,
+    // Cast: WorkRow.materials uses plain string for colorHex, but WorkInsert
+    // uses the HexColor brand. Same pattern as tone/accent above.
+    materials: (work.materials ?? null) as WorkInsert['materials'],
   };
 
   const galleryRows: GalleryRow[] = galleryRowsRaw.map((r) => ({
