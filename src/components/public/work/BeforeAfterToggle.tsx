@@ -11,6 +11,11 @@ type Props = {
   /** Which image to show initially. Default 'after'. */
   initial?: 'before' | 'after';
   className?: string;
+  /**
+   * Pass `true` only for above-the-fold / LCP-adjacent toggles (chorus pair).
+   * All other callers should omit this (defaults to false).
+   */
+  priority?: boolean;
 };
 
 /**
@@ -26,6 +31,7 @@ export function BeforeAfterToggle({
   after,
   initial = 'after',
   className,
+  priority = false,
 }: Props) {
   const [active, setActive] = useState<'before' | 'after'>(initial);
 
@@ -61,7 +67,7 @@ export function BeforeAfterToggle({
           (active === 'after' ? 'opacity-100' : 'opacity-0')
         }
         aria-hidden={active !== 'after'}
-        priority
+        priority={priority}
         unoptimized
       />
       <Image

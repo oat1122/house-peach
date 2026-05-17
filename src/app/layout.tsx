@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, DM_Serif_Display } from 'next/font/google';
 
 import { ThemeProvider } from '@/components/common/ThemeProvider';
 
@@ -13,6 +13,26 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
+});
+
+/**
+ * DM Serif Display — editorial serif used for H1 hero, drop cap, and pull
+ * quote. Only the 400 weight exists (no bold cut); bold headings are achieved
+ * via tracking-tight + large size.
+ *
+ * Thai subset note: DM Serif Display does NOT include a Thai subset on Google
+ * Fonts. Thai characters in an element with `font-serif` will fall back to the
+ * OS Thai serif stack (e.g. Sarabun, Angsana). This is intentional — the brand
+ * chose DM Serif Display for its Latin editorial character; Thai copy in h1
+ * headings falls back gracefully. No corrective action needed.
+ */
+const dmSerifDisplay = DM_Serif_Display({
+  weight: '400',
+  style: ['normal', 'italic'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-serif',
+  adjustFontFallback: false,
 });
 
 export const metadata: Metadata = {
@@ -43,7 +63,7 @@ export default function RootLayout({
     <html
       lang="th"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${dmSerifDisplay.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <ThemeProvider>{children}</ThemeProvider>

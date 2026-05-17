@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { env } from '@/env';
+import type { PostRow } from '@/lib/db/schema/posts';
 import type { WorkRow } from '@/lib/db/schema/works';
 
 type CreativeWorkLdInput = {
@@ -58,6 +59,95 @@ export function buildCreativeWorkLd(input: CreativeWorkLdInput) {
   }
 
   return ld;
+}
+
+type BlogPostingLdInput = {
+  post: PostRow;
+  coverUrl?: string | null;
+  authorName?: string | null;
+  url: string;
+  wordCount?: number | null;
+};
+
+/**
+ * Builds a `schema.org/BlogPosting` JSON-LD object for a blog post.
+ *
+ * Returns a plain object — NOT a stringified `<script>` tag. The RSC page
+ * is responsible for rendering `<script type="application/ld+json">` with
+ * `JSON.stringify()`, matching the pattern used by `buildCreativeWorkLd`.
+ *
+ * `timeRequired` uses ISO 8601 duration format (PT<n>M) derived from
+ * `readingTimeMin`. Omitted when null so Google doesn't receive a zero/null
+ * value which could produce unexpected rich snippet behaviour.
+ */
+export function buildBlogPostingLd(input: BlogPostingLdInput) {
+  const { post, coverUrl, authorName, url, wordCount } = input;
+  const origin = env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+
+  const ld: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.excerpt,
+    url,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    publisher: {
+      '@type': 'Organization',
+      name: 'house-peach',
+      logo: {
+        '@type': 'ImageObject',
+        url: `${origin}/og/logo.png`,
+      },
+    },
+    dateModified: post.updatedAt.toISOString(),
+  };
+
+  // Google Article rich-result requires `image`. Always emit — fall back to
+  // the brand logo when a post has no cover so the BlogPosting validates.
+  ld.image = coverUrl ? [coverUrl] : [`${origin}/og/logo.png`];
+  // `datePublished` is also a Google-required field. Fall back to updatedAt
+  // for the edge case of an archived post with publishedAt cleared.
+  ld.datePublished = (post.publishedAt ?? post.updatedAt).toISOString();
+  if (authorName) {
+    ld.author = { '@type': 'Person', name: authorName };
+  }
+  if (wordCount != null && wordCount > 0) ld.wordCount = wordCount;
+  if (post.readingTimeMin != null && post.readingTimeMin > 0) {
+    ld.timeRequired = `PT${post.readingTimeMin}M`;
+  }
+
+  return ld;
+}
+
+/**
+ * BreadcrumbList — `/` → `/blog` → `/blog/<slug>` (current post).
+ */
+export function buildPostBreadcrumbLd(post: Pick<PostRow, 'title' | 'slug'>) {
+  const origin = env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'หน้าแรก',
+        item: `${origin}/`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'บทความ',
+        item: `${origin}/blog`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: post.title,
+        item: `${origin}/blog/${encodeURIComponent(post.slug)}`,
+      },
+    ],
+  };
 }
 
 /**

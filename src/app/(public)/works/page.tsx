@@ -89,6 +89,16 @@ export default async function WorksPage({ searchParams }: PageProps) {
     },
   };
 
+  // 2-item BreadcrumbList for the listing page (home → ผลงาน)
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'หน้าแรก', item: `${siteOrigin}/` },
+      { '@type': 'ListItem', position: 2, name: 'ผลงาน', item: `${siteOrigin}/works` },
+    ],
+  };
+
   const filterParams = {
     room: params.room as string | undefined,
     style: params.style,
@@ -107,11 +117,11 @@ export default async function WorksPage({ searchParams }: PageProps) {
             <h1 className="font-serif text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] text-ink">
               ผลงาน · Works
             </h1>
-            <p className="text-base md:text-lg text-muted leading-[1.65] max-w-prose mt-3">
+            <p className="text-base md:text-lg text-muted-brand leading-[1.65] max-w-prose mt-3">
               สตูดิโอออกแบบและตกแต่งบ้านแนวอบอุ่นแบบเรียบง่าย — เลือกดูผลงานตามประเภทห้อง
               สไตล์ หรือดูทั้งหมดเพื่อหาแรงบันดาลใจของบ้านในแบบของคุณ
             </p>
-            <p className="text-xs uppercase tracking-widest text-muted mt-4">
+            <p className="text-xs uppercase tracking-widest text-muted-brand mt-4">
               {countLabel}
             </p>
           </div>
@@ -149,11 +159,21 @@ export default async function WorksPage({ searchParams }: PageProps) {
         />
       </div>
 
-      {/* JSON-LD CollectionPage (base page only — filter/paginated pages share same HTML) */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageLd) }}
-      />
+      {/* JSON-LD — omit on filtered pages (noindex; Google ignores their
+           structured data anyway). Emit both CollectionPage + BreadcrumbList
+           on the canonical /works listing. */}
+      {!isFiltered && (
+        <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageLd) }}
+          />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+          />
+        </>
+      )}
     </>
   );
 }
@@ -181,12 +201,19 @@ export async function generateMetadata({
   const hasFilter = !!(params.room || params.style);
   const hasPagination = params.page > 1;
 
-  // Base page — return same as static metadata
+  // Base page — full metadata including OG/Twitter for social previews
   if (!hasFilter && !hasPagination) {
     return {
       title: 'ผลงาน',
       description: META_DESCRIPTION,
       alternates: { canonical: '/works' },
+      openGraph: {
+        title: 'ผลงาน',
+        description: META_DESCRIPTION,
+        url: '/works',
+        type: 'website',
+      },
+      twitter: { card: 'summary', title: 'ผลงาน', description: META_DESCRIPTION },
     };
   }
 

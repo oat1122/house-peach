@@ -23,9 +23,12 @@ export function WorkPullQuote({ quote, clientName }: Props) {
 
   return (
     <FadeUp>
+      {/* bg-bg2 fill distinguishes the blockquote visually; the accent border
+           provides the editorial left rule. Together they eliminate any single-
+           indicator contrast dependency (WCAG major #2 fix). */}
       <figure
         aria-label="คำพูดจากลูกค้า"
-        className="max-w-2xl mx-auto mt-16 border-l-2 md:border-l-4 border-brand-accent pl-4 md:pl-8"
+        className="max-w-2xl mx-auto mt-16 bg-bg2 rounded-r-md border-l-2 md:border-l-4 border-brand-accent pl-4 md:pl-8 p-4 md:p-6 my-8"
       >
         <blockquote className="font-serif text-2xl md:text-3xl leading-[1.4] text-ink">
           {quote}

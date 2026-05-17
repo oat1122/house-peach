@@ -16,6 +16,12 @@ type Props = {
   /** Initial divider position 0-100, default 50. */
   initial?: number;
   className?: string;
+  /**
+   * Pass `true` only for above-the-fold / LCP-adjacent sliders (chorus pair).
+   * All other callers should omit this (defaults to false) to avoid eager
+   * preloading below-fold images.
+   */
+  priority?: boolean;
 };
 
 /**
@@ -36,6 +42,7 @@ export function BeforeAfterSlider({
   after,
   initial = 50,
   className,
+  priority = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [pct, setPct] = useState(clamp(initial, 0, 100));
@@ -119,11 +126,13 @@ export function BeforeAfterSlider({
         fill
         sizes="(max-width: 768px) 100vw, 768px"
         className="pointer-events-none object-cover"
-        priority
+        priority={priority}
         unoptimized
       />
+      {/* aria-hidden removed — clip-path hides the before image visually but
+           does NOT affect the accessibility tree. Screen reader users need to
+           hear the before alt text. */}
       <div
-        aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{ clipPath: `inset(0 ${100 - pct}% 0 0)` }}
       >

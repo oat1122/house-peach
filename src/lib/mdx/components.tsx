@@ -19,12 +19,24 @@ import { MDXImage } from '@/components/mdx/MDXImage';
  * Per-work components (BeforeAfter etc.) are injected at the call site via
  * `composeWorkMdxComponents()` — they need closure over the page's data.
  */
+/**
+ * Allowlist of URL schemes safe to render in MDX. Without this, an editor
+ * could plant `[click](javascript:alert(1))` and ship a stored XSS payload
+ * to every reader. We also accept root-relative paths (`/about`) and bare
+ * fragments (`#section`) — anything else is dropped to a plain span.
+ */
+const SAFE_SCHEME = /^(https?|mailto|tel):/i;
+
 function MdxLink({
   href,
   children,
   ...rest
 }: ComponentProps<'a'>) {
   if (!href) return <span>{children}</span>;
+  const isInternalPath = href.startsWith('/') || href.startsWith('#');
+  if (!isInternalPath && !SAFE_SCHEME.test(href)) {
+    return <span>{children}</span>;
+  }
   const isExternal = /^https?:\/\//i.test(href);
   if (isExternal) {
     return (
@@ -133,6 +145,16 @@ function MdxPre(props: ComponentProps<'pre'>) {
 }
 
 /**
+ * Map a forbidden tag (`<script>`, `<iframe>`, …) to a component that
+ * renders nothing. `next-mdx-remote` parses raw HTML in MDX as JSX, and
+ * React happily renders a JSX `<script>` element as a literal `<script>` —
+ * NOT escaped. Without these explicit overrides an editor could plant
+ * `<script>alert(1)</script>` in a post body and ship a stored XSS payload.
+ * Returning `null` drops the node from the React tree entirely.
+ */
+const RejectTag = () => null;
+
+/**
  * Base components shared by every MDX render. Augment with per-page entries
  * (e.g. `BeforeAfter`) via spread before passing to `compileMDX`.
  */
@@ -154,4 +176,12 @@ export const baseMdxComponents = {
   pre: MdxPre,
   img: MDXImage,
   MDXImage,
+  // Defence-in-depth XSS overrides — see RejectTag jsdoc.
+  script: RejectTag,
+  iframe: RejectTag,
+  style: RejectTag,
+  form: RejectTag,
+  input: RejectTag,
+  object: RejectTag,
+  embed: RejectTag,
 };

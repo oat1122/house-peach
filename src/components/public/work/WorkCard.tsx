@@ -73,10 +73,11 @@ export function WorkCard({ work, variant = 'regular', priority = false }: Props)
   if (variant === 'hero') {
     return (
       <article>
+        {/* No aria-label — the visible title inside is the accessible name.
+             An aria-label would shadow the eyebrow, excerpt, and stat text. */}
         <Link
           href={`/works/${encodeURIComponent(slug)}`}
           className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded-md"
-          aria-label={`ดูผลงาน: ${title}`}
         >
           {/* Mobile: full-bleed, no radius. Desktop: rounded inside grid column */}
           <div className="md:grid md:grid-cols-[3fr_2fr] md:gap-8 md:items-center">
@@ -99,13 +100,15 @@ export function WorkCard({ work, variant = 'regular', priority = false }: Props)
 
             {/* Text column */}
             <div className="px-4 md:px-0 mt-4 md:mt-0 md:py-4">
-              <p className="text-[11px] uppercase tracking-widest text-muted">
+              <p className="text-[11px] uppercase tracking-widest text-muted-brand">
                 {eyebrow}
               </p>
-              <h3 className="font-serif text-3xl md:text-4xl font-bold text-ink mt-2 leading-[1.2] group-hover:text-accent transition-colors line-clamp-3">
+              {/* h2 — listing page h1 is "ผลงาน"; hero card is the next heading
+                   level. Regular cards use <p> (not a section heading). */}
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-ink mt-2 leading-[1.2] group-hover:text-accent transition-colors line-clamp-3">
                 {title}
-              </h3>
-              <p className="text-sm md:text-base text-muted leading-[1.65] mt-2 line-clamp-3">
+              </h2>
+              <p className="text-sm md:text-base text-muted-brand leading-[1.65] mt-2 line-clamp-3">
                 {summary}
               </p>
 
@@ -123,7 +126,7 @@ export function WorkCard({ work, variant = 'regular', priority = false }: Props)
                         <p className="text-2xl font-bold text-ink leading-none">
                           {areaSqmNum.toFixed(0)}
                         </p>
-                        <p className="text-[10px] uppercase tracking-widest text-muted mt-1">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-brand mt-1">
                           ตร.ม.
                         </p>
                       </div>
@@ -133,7 +136,7 @@ export function WorkCard({ work, variant = 'regular', priority = false }: Props)
                         <p className="text-2xl font-bold text-ink leading-none">
                           {durationDays}
                         </p>
-                        <p className="text-[10px] uppercase tracking-widest text-muted mt-1">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-brand mt-1">
                           วัน
                         </p>
                       </div>
@@ -143,7 +146,7 @@ export function WorkCard({ work, variant = 'regular', priority = false }: Props)
                         <p className="text-2xl font-bold text-ink leading-none">
                           {yearCompleted}
                         </p>
-                        <p className="text-[10px] uppercase tracking-widest text-muted mt-1">
+                        <p className="text-[10px] uppercase tracking-widest text-muted-brand mt-1">
                           ปี
                         </p>
                       </div>
@@ -165,10 +168,10 @@ export function WorkCard({ work, variant = 'regular', priority = false }: Props)
   // Regular variant
   return (
     <article>
+      {/* No aria-label — visible title provides the accessible name. */}
       <Link
         href={`/works/${encodeURIComponent(slug)}`}
         className="group block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-        aria-label={`ดูผลงาน: ${title}`}
       >
         {/* Cover image — aspect 3:2 */}
         <div className="relative w-full aspect-[3/2] overflow-hidden rounded-md bg-bg2">
@@ -189,14 +192,14 @@ export function WorkCard({ work, variant = 'regular', priority = false }: Props)
 
         {/* Meta */}
         <div className="mt-3">
-          <p className="text-[11px] uppercase tracking-widest text-muted">
+          <p className="text-[11px] uppercase tracking-widest text-muted-brand">
             {eyebrow}
           </p>
           <p className="text-base font-semibold text-ink mt-1 line-clamp-2 group-hover:text-accent transition-colors">
             {title}
           </p>
           {statLine && (
-            <p className="text-xs text-muted mt-1">{statLine}</p>
+            <p className="text-xs text-muted-brand mt-1">{statLine}</p>
           )}
         </div>
       </Link>

@@ -82,7 +82,7 @@ export function WorksFilterBar({ availableStyles }: Props) {
         <div className="flex items-center gap-2">
           <label
             htmlFor="filter-room"
-            className="text-xs text-muted sr-only"
+            className="text-xs text-muted-brand sr-only"
           >
             ประเภทห้อง
           </label>
@@ -92,10 +92,20 @@ export function WorksFilterBar({ availableStyles }: Props) {
           >
             <SelectTrigger
               id="filter-room"
-              className="h-8 text-sm min-w-[120px]"
+              className="h-11 text-sm min-w-[140px]"
               aria-label="กรองตามประเภทห้อง"
             >
-              <SelectValue placeholder="ห้อง" />
+              {/* base-ui SelectValue renders the raw value string by default —
+                  we must pass a formatter to translate it back to the Thai
+                  label. Without this, the trigger shows "__all__" or "living"
+                  literal instead of "ทุกห้อง" / "ห้องนั่งเล่น". */}
+              <SelectValue placeholder="ทุกห้อง">
+                {(v) =>
+                  !v || v === '__all__'
+                    ? 'ทุกห้อง'
+                    : (ROOM_TYPE_LABELS_TH[v as string] ?? (v as string))
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__all__">ทุกห้อง</SelectItem>
@@ -113,7 +123,7 @@ export function WorksFilterBar({ availableStyles }: Props) {
           <div className="flex items-center gap-2">
             <label
               htmlFor="filter-style"
-              className="text-xs text-muted sr-only"
+              className="text-xs text-muted-brand sr-only"
             >
               สไตล์
             </label>
@@ -123,10 +133,14 @@ export function WorksFilterBar({ availableStyles }: Props) {
             >
               <SelectTrigger
                 id="filter-style"
-                className="h-8 text-sm min-w-[120px]"
+                className="h-11 text-sm min-w-[140px]"
                 aria-label="กรองตามสไตล์"
               >
-                <SelectValue placeholder="สไตล์" />
+                <SelectValue placeholder="ทุกสไตล์">
+                  {(v) =>
+                    !v || v === '__all__' ? 'ทุกสไตล์' : (v as string)
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__all__">ทุกสไตล์</SelectItem>
@@ -140,13 +154,15 @@ export function WorksFilterBar({ availableStyles }: Props) {
           </div>
         )}
 
-        {/* Clear filters — only when any filter is active */}
+        {/* Clear filters — only when any filter is active.
+             px-3 py-2 gives ~36px height. WCAG recommends 44px; 36px + clear
+             focus ring is acceptable for low-priority tertiary controls. */}
         {hasActiveFilter && (
           <button
             type="button"
             onClick={handleClearFilters}
             aria-label="ล้างตัวกรองทั้งหมด"
-            className="text-xs text-muted hover:text-ink transition-colors px-2 py-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="text-xs text-muted-brand hover:text-ink transition-colors px-3 min-h-[44px] inline-flex items-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             × ล้างตัวกรอง
           </button>

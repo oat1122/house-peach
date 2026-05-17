@@ -21,6 +21,11 @@ type Props = {
   /** Forces a mode regardless of viewport. Default = 'auto'. */
   mode?: Mode | 'auto';
   className?: string;
+  /**
+   * Pass `true` only for the LCP-adjacent chorus pair.
+   * Propagated to the inner Slider/Toggle so only that image gets `priority`.
+   */
+  priority?: boolean;
 };
 
 /**
@@ -36,6 +41,7 @@ export function BeforeAfterCard({
   caption,
   mode = 'auto',
   className,
+  priority = false,
 }: Props) {
   const isMobile = useIsMobile();
   const reduce = useReducedMotionGate();
@@ -52,9 +58,9 @@ export function BeforeAfterCard({
     <figure className={'space-y-2 ' + (className ?? '')}>
       <div className="relative">
         {effective === 'slider' ? (
-          <BeforeAfterSlider before={before} after={after} />
+          <BeforeAfterSlider before={before} after={after} priority={priority} />
         ) : (
-          <BeforeAfterToggle before={before} after={after} />
+          <BeforeAfterToggle before={before} after={after} priority={priority} />
         )}
 
         {!reduce && (

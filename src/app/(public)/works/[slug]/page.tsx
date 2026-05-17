@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { eq, inArray } from 'drizzle-orm';
 
+import { env } from '@/env';
 import { db } from '@/lib/db';
 import { mediaAssets } from '@/lib/db/schema/mediaAssets';
 import { tags as tagsTable } from '@/lib/db/schema/tags';
@@ -16,9 +16,13 @@ import { compileWorkMdx } from '@/lib/mdx/compile';
 import { buildCreativeWorkLd, buildWorkBreadcrumbLd } from '@/lib/seo/jsonld';
 import { buildWorkMetadata } from '@/lib/seo/metadata';
 import { resolveRoomTypeLabel } from '@/lib/utils/workLabels';
-import { estimateWordCount } from '@/lib/utils/wordCount';
 import { FadeUp } from '@/components/motion/FadeUp';
+import { ReadingProgress } from '@/components/motion/ReadingProgress';
+import { BackToTop } from '@/components/public/blog/BackToTop';
+import { WorkBreadcrumb } from '@/components/public/work/WorkBreadcrumb';
+import { WorkMetaRow } from '@/components/public/work/WorkMetaRow';
 import { WorkHero } from '@/components/public/work/WorkHero';
+import { WorkChaptersNav, type ChapterEntry } from '@/components/public/work/WorkChaptersNav';
 import { WorkGallerySection } from '@/components/public/work/WorkGallerySection';
 import { buildClusters } from '@/components/public/work/WorkGallery';
 import {
@@ -35,7 +39,9 @@ import { WorkConceptSection } from '@/components/public/work/WorkConceptSection'
 import { WorkProcessTimeline } from '@/components/public/work/WorkProcessTimeline';
 import { WorkDesignerNote } from '@/components/public/work/WorkDesignerNote';
 import { WorkCTACard } from '@/components/public/work/WorkCTACard';
+import { WorkFooter } from '@/components/public/work/WorkFooter';
 import { WorkRelatedSection } from '@/components/public/work/WorkRelatedSection';
+import { RecentWorksCard } from '@/components/public/work/RecentWorksCard';
 import { BeforeAfterCard } from '@/components/public/work/BeforeAfterCard';
 
 export const revalidate = 60; // ISR — 60s per `seo.md §8.1 Render mode`
@@ -44,11 +50,6 @@ export async function generateMetadata(props: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await props.params;
-  // Next 16 hands `params.slug` URL-encoded on some code paths
-  // (e.g., generateMetadata vs. page render) for non-ASCII slugs — confirmed
-  // empirically: page got "บ้าน-03" but metadata got "%E0%B8%9A...".
-  // Decode unconditionally, then NFC-normalize so the byte sequence matches
-  // what slugify() now writes to DB.
   const work = await getPublishedWorkBySlug(decodeSlug(slug));
   if (!work) {
     return { title: 'ไม่พบผลงาน', robots: { index: false } };
@@ -87,29 +88,26 @@ export default async function WorkDetailPage(props: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await props.params;
-  // See generateMetadata comment above for why we decode here too.
   const work = await getPublishedWorkBySlug(decodeSlug(slug));
   if (!work) notFound();
 
-  // ── Parallel data fetch (spec §14c) ───────────────────────────────────────
-  const [images, tagNames, sidebarRelated] = await Promise.all([
+  // ── Parallel data fetch ──────────────────────────────────────────────────
+  const [images, tagRows, sidebarRelated] = await Promise.all([
     listWorkImages(work.id),
     work.tagIds.length > 0
       ? db
-          .select({ name: tagsTable.name })
+          .select({ id: tagsTable.id, slug: tagsTable.slug, name: tagsTable.name })
           .from(tagsTable)
           .where(inArray(tagsTable.id, work.tagIds))
-          .then((rows) => rows.map((r) => r.name))
-      : Promise.resolve<string[]>([]),
+      : Promise.resolve<{ id: number; slug: string; name: string }[]>([]),
     listSimilarWorks(work.id, work.roomType, work.style, 3),
   ]);
 
-  // Serial: bottomRelated depends on sidebarRelated ids (spec §14c)
+  // Serial: bottomRelated depends on sidebarRelated ids
   const sidebarIds = sidebarRelated.map((w) => w.id);
   const bottomRelated = await listLatestOtherWorks(work.id, sidebarIds, 3);
 
-  // ── Server-side pre-computation ───────────────────────────────────────────
-  const wordCount = estimateWordCount(work.bodyMdx);
+  // ── Server-side pre-computation ──────────────────────────────────────────
   const firstBodyChar = work.bodyMdx.trim()[0] ?? '';
 
   const cover = work.coverMediaAssetId
@@ -117,10 +115,10 @@ export default async function WorkDetailPage(props: {
     : null;
 
   const roomTypeLabel = resolveRoomTypeLabel(work.roomType);
+  const tagNames = tagRows.map((t) => t.name);
 
   // Floor plan: first kind='plan' image by existing sort order
-  const floorPlanImage =
-    images.find((i) => i.kind === 'plan')?.asset ?? null;
+  const floorPlanImage = images.find((i) => i.kind === 'plan')?.asset ?? null;
   const floorPlanForSection = floorPlanImage
     ? {
         path: floorPlanImage.path,
@@ -136,15 +134,11 @@ export default async function WorkDetailPage(props: {
   );
   const beforeAfterClusters = buildClusters(beforeAfterImages);
   const pairClusters = beforeAfterClusters.filter((c) => c.kind === 'pair');
-
-  // Chorus = first pair; additional pairs shown below chorus
   const chorusCluster = pairClusters[0] ?? null;
   const additionalPairClusters = pairClusters.slice(1);
 
-  // Process images (sorted by sort column — already ordered by listWorkImages)
+  // Process / detail images
   const processImages = images.filter((i) => i.kind === 'process');
-
-  // Detail images
   const detailImages = images.filter((i) => i.kind === 'detail');
   const detailClusters = buildClusters(detailImages);
 
@@ -153,7 +147,26 @@ export default async function WorkDetailPage(props: {
   const BeforeAfter = composeBeforeAfterEmbed(pairData);
   const body = await compileWorkMdx(work.bodyMdx, { BeforeAfter });
 
-  // SEO structured data (unchanged from v1)
+  // ── Chapter presence map — drives WorkChaptersNav filtering ─────────────
+  const hasChorus = chorusCluster != null;
+  const hasConcept =
+    (work.materials != null && work.materials.length > 0) ||
+    floorPlanForSection != null;
+  const hasProcess = processImages.length > 0;
+  const hasDetail = detailClusters.length > 0;
+
+  const allChapters: (ChapterEntry & { present: boolean })[] = [
+    { id: 'chapter-01', number: '01', th: 'โจทย์', en: 'The Brief', present: true },
+    { id: 'chapter-02', number: '02', th: 'การเปลี่ยนแปลง', en: 'Before & After', present: hasChorus },
+    { id: 'chapter-03', number: '03', th: 'แนวคิดและวัสดุ', en: 'Concept', present: hasConcept },
+    { id: 'chapter-04', number: '04', th: 'กระบวนการ', en: 'Process', present: hasProcess },
+    { id: 'chapter-05', number: '05', th: 'รายละเอียด', en: 'Details', present: hasDetail },
+  ];
+  const presentChapters: ChapterEntry[] = allChapters
+    .filter((c) => c.present)
+    .map(({ id, number, th, en }) => ({ id, number, th, en }));
+
+  // ── SEO structured data ─────────────────────────────────────────────────
   const galleryPaths = images
     .filter((r) => r.mediaAssetId !== work.coverMediaAssetId)
     .map((r) => r.asset.path);
@@ -165,8 +178,9 @@ export default async function WorkDetailPage(props: {
   });
   const breadcrumbLd = buildWorkBreadcrumbLd(work);
 
-  // areaSqm from DB comes as decimal string — parse to number for stat band
-  const areaSqmNum = work.areaSqm != null ? parseFloat(String(work.areaSqm)) : null;
+  // areaSqm from DB comes as decimal string — parse to number
+  const areaSqmNum =
+    work.areaSqm != null ? parseFloat(String(work.areaSqm)) : null;
 
   // Chorus BeforeAfterImage pairs for WorkChorusBeforeAfter
   const chorusPair =
@@ -182,47 +196,39 @@ export default async function WorkDetailPage(props: {
         }
       : null;
 
+  // URL for ShareRow — encodeURIComponent on slug for non-ASCII safety
+  const origin = env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+  const workUrl = `${origin}/works/${encodeURIComponent(work.slug)}`;
+
+  // Tag chips shown in the hero meta row (top 2 — full list at footer below)
+  const heroTags = tagRows.slice(0, 2).map((t) => ({ name: t.name, slug: t.slug }));
+
   return (
     <>
-      {/*
-       * Page outer wrapper — max-w-7xl so full-bleed gallery sections can fill
-       * wide screens. The `px-4 md:px-6` gutter is cancelled by `-mx-4/-mx-6`
-       * on sections that need full-bleed.
-       */}
-      <article className="mx-auto max-w-7xl px-4 pt-6 pb-16 md:px-6 md:pt-8">
+      {/* Reading progress bar — fixed top, parity with blog */}
+      <ReadingProgress />
 
-        {/* ── S1: Breadcrumb ─────────────────────────────────────────────────── */}
-        <nav aria-label="breadcrumb" className="text-xs text-muted-brand">
-          <Link href="/" className="hover:text-ink">
-            หน้าแรก
-          </Link>{' '}
-          /{' '}
-          <Link href="/works" className="hover:text-ink">
-            ผลงาน
-          </Link>{' '}
-          / <span className="text-ink">{work.title}</span>
-        </nav>
+      {/* ── HERO BLOCK ─────────────────────────────────────────────────── */}
+      <article className="mx-auto max-w-7xl px-4 pt-6 pb-0 md:px-6 md:pt-8">
+        <WorkBreadcrumb workTitle={work.title} />
 
-        {/*
-         * ── S2 + S3 + S4: Eyebrow + H1 + Summary (one FadeUp unit) ───────────
-         * H1 bumped to text-5xl md:text-7xl per spec §S3 + §2 Pillar 1.
-         * Eyebrow omits null fields; roomType is always present.
-         */}
         <FadeUp className="mt-6 max-w-4xl">
           <header>
-            {/* S2: Eyebrow */}
-            <p className="text-[11px] uppercase tracking-widest font-sans text-muted-brand">
-              {roomTypeLabel}
-              {work.style ? ` · ${work.style}` : ''}
-              {work.yearCompleted ? ` · ${work.yearCompleted}` : ''}
-            </p>
+            {/* Meta row replaces the legacy single-line eyebrow */}
+            <WorkMetaRow
+              roomTypeLabel={roomTypeLabel}
+              style={work.style ?? null}
+              yearCompleted={work.yearCompleted ?? null}
+              location={work.location ?? null}
+              areaSqm={areaSqmNum}
+              durationDays={work.durationDays ?? null}
+              tags={heroTags}
+            />
 
-            {/* S3: H1 */}
-            <h1 className="font-serif text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] text-ink mt-3">
+            <h1 className="font-serif text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] text-ink mt-5">
               {work.title}
             </h1>
 
-            {/* S4: Summary */}
             {work.summary && (
               <p className="mt-3 max-w-prose text-base md:text-lg text-muted-brand leading-[1.65]">
                 {work.summary}
@@ -232,11 +238,9 @@ export default async function WorkDetailPage(props: {
         </FadeUp>
 
         {/*
-         * ── S5: Hero image ────────────────────────────────────────────────────
-         * v2.2: aspect-[16/9] mobile → aspect-[21/9] desktop (cinematic).
-         * rounded-none: full-bleed, no border radius (spec §S5, §21 #5).
-         * -mx-4/-mx-6 breaks out of the page gutter.
-         * No animation wrapper — LCP element (spec §19 + motion.md).
+         * Hero cover image — full-bleed cinematic 16:9 → 21:9, rounded-none.
+         * Kept as work's portfolio identity (not the blog's contained 16:9
+         * rounded card). LCP element — no FadeUp wrapper per motion.md.
          */}
         {cover && (
           <div className="mt-8 -mx-4 md:-mx-6">
@@ -252,187 +256,201 @@ export default async function WorkDetailPage(props: {
           </div>
         )}
 
-        {/* ── S6: Stat band ─────────────────────────────────────────────────── */}
         <WorkStatBand
           areaSqm={areaSqmNum}
           durationDays={work.durationDays ?? null}
           budgetRange={work.budgetRange ?? null}
           yearCompleted={work.yearCompleted ?? null}
         />
+      </article>
 
-        {/*
-         * ── Chapter 01: โจทย์ / The Brief ───────────────────────────────────
-         * mt-24 between chapters per spec §2 Pillar 3 (applied at chapter
-         * container level, not inside WorkChapterDivider itself).
-         */}
-        <div className="mt-24">
-          <FadeUp>
-            <WorkChapterDivider number="01" th="โจทย์" en="The Brief" />
-          </FadeUp>
+      {/* ── BODY GRID (article + sidebar) ───────────────────────────────── */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 pt-12 pb-24">
+        {/* Mobile: chapter nav inline above article */}
+        {presentChapters.length > 1 && (
+          <div className="lg:hidden mb-8">
+            <WorkChaptersNav chapters={presentChapters} />
+          </div>
+        )}
 
-          <FadeUp className="mt-6">
-            <WorkChapterBody firstChar={firstBodyChar}>
-              {body}
-            </WorkChapterBody>
-          </FadeUp>
-        </div>
-
-        {/*
-         * ── Chapter 02: การเปลี่ยนแปลง / Before & After ─────────────────────
-         * Entire chapter (divider + chorus + additional pairs + pull quote)
-         * is skipped when there are no before/after pairs (spec §22).
-         * Chapter number stays "02" even when skipped — stable numbering §25.
-         */}
-        {chorusPair && (
-          <div className="mt-24">
-            <FadeUp>
-              <WorkChapterDivider
-                number="02"
-                th="การเปลี่ยนแปลง"
-                en="Before & After"
-              />
-            </FadeUp>
-
-            {/* Chorus — first pair, full-bleed, no rounding */}
-            <div className="mt-6">
-              <WorkChorusBeforeAfter pair={chorusPair} />
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 lg:gap-16 items-start">
+          {/* Main column — chapters live here */}
+          <div className="min-w-0">
+            {/* ── Ch 01 · The Brief ──────────────────────────────────── */}
+            <div>
+              <FadeUp>
+                <WorkChapterDivider number="01" th="โจทย์" en="The Brief" />
+              </FadeUp>
+              <FadeUp className="mt-6">
+                <WorkChapterBody firstChar={firstBodyChar}>{body}</WorkChapterBody>
+              </FadeUp>
             </div>
 
-            {/* Additional pairs — smaller, side-by-side on desktop */}
-            {additionalPairClusters.length > 0 && (
-              <div className="mt-8 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-                {additionalPairClusters.map((c) => {
-                  if (c.kind !== 'pair') return null;
-                  const before = toBAImage(c.before, `ก่อนแต่ง — ${work.title}`);
-                  const after = toBAImage(c.after, `หลังแต่ง — ${work.title}`);
-                  const caption = c.after.caption ?? c.before.caption ?? null;
-                  return (
-                    <FadeUp key={`addl-${c.pairId}`}>
-                      <BeforeAfterCard
-                        before={before}
-                        after={after}
-                        caption={caption}
-                        className="rounded-2xl"
-                      />
-                    </FadeUp>
-                  );
-                })}
+            {/* ── Ch 02 · Before & After ─────────────────────────────── */}
+            {chorusPair && (
+              <div className="mt-24">
+                <FadeUp>
+                  <WorkChapterDivider
+                    number="02"
+                    th="การเปลี่ยนแปลง"
+                    en="Before & After"
+                  />
+                </FadeUp>
+
+                <div className="mt-6">
+                  <WorkChorusBeforeAfter pair={chorusPair} />
+                </div>
+
+                {additionalPairClusters.length > 0 && (
+                  <div className="mt-8 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {additionalPairClusters.map((c) => {
+                      if (c.kind !== 'pair') return null;
+                      const before = toBAImage(
+                        c.before,
+                        `ก่อนแต่ง — ${work.title}`,
+                      );
+                      const after = toBAImage(
+                        c.after,
+                        `หลังแต่ง — ${work.title}`,
+                      );
+                      const caption =
+                        c.after.caption ?? c.before.caption ?? null;
+                      return (
+                        <FadeUp key={`addl-${c.pairId}`}>
+                          <BeforeAfterCard
+                            before={before}
+                            after={after}
+                            caption={caption}
+                            className="rounded-2xl"
+                          />
+                        </FadeUp>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <WorkPullQuote
+                  quote={work.clientQuote ?? null}
+                  clientName={work.clientName ?? null}
+                />
               </div>
             )}
 
-            {/* Pull quote — skips when clientQuote is null */}
-            <WorkPullQuote
-              quote={work.clientQuote ?? null}
-              clientName={work.clientName ?? null}
-            />
-          </div>
-        )}
+            {/* ── Ch 03 · Concept ─────────────────────────────────────── */}
+            {hasConcept && (
+              <div className="mt-24">
+                <FadeUp>
+                  <WorkChapterDivider
+                    number="03"
+                    th="แนวคิดและวัสดุ"
+                    en="Concept"
+                  />
+                </FadeUp>
 
-        {/*
-         * ── Chapter 03: แนวคิดและวัสดุ / Concept ─────────────────────────────
-         * Chapter number stays "03" regardless of whether chapter 02 rendered.
-         * Left column is EMPTY on desktop — bodyMdx rendered once in ch01.
-         * WorkConceptSection returns null when there is nothing to show.
-         */}
-        <div className="mt-24">
-          <FadeUp>
-            <WorkChapterDivider
-              number="03"
-              th="แนวคิดและวัสดุ"
-              en="Concept"
-            />
-          </FadeUp>
+                <WorkConceptSection
+                  palette={work.materials ?? null}
+                  floorPlanImage={floorPlanForSection}
+                  workTitle={work.title}
+                />
+              </div>
+            )}
 
-          <WorkConceptSection
-            palette={work.materials ?? null}
-            floorPlanImage={floorPlanForSection}
-            sidebarRelated={sidebarRelated}
-            wordCount={wordCount}
-            workTitle={work.title}
-          />
-        </div>
+            {/* ── Ch 04 · Process ─────────────────────────────────────── */}
+            {processImages.length > 0 && (
+              <div className="mt-24">
+                <FadeUp>
+                  <WorkChapterDivider
+                    number="04"
+                    th="กระบวนการ"
+                    en="Process"
+                  />
+                </FadeUp>
 
-        {/*
-         * ── Chapter 04: กระบวนการ / Process ─────────────────────────────────
-         * Entire chapter skipped when processImages is empty (spec §S15 null fallback).
-         */}
-        {processImages.length > 0 && (
-          <div className="mt-24">
-            <FadeUp>
-              <WorkChapterDivider
-                number="04"
-                th="กระบวนการ"
-                en="Process"
-              />
-            </FadeUp>
+                <div className="mt-8 max-w-5xl mx-auto">
+                  <WorkProcessTimeline
+                    images={processImages}
+                    workTitle={work.title}
+                  />
+                </div>
+              </div>
+            )}
 
-            <div className="mt-8 max-w-5xl mx-auto">
-              <WorkProcessTimeline
-                images={processImages}
-                workTitle={work.title}
-              />
+            {/* ── Ch 05 · Details ────────────────────────────────────── */}
+            {detailClusters.length > 0 && (
+              <div className="mt-24">
+                <FadeUp>
+                  <WorkChapterDivider
+                    number="05"
+                    th="รายละเอียด"
+                    en="Details"
+                  />
+                </FadeUp>
+
+                <div className="-mx-4 md:-mx-6 mt-8">
+                  <WorkGallerySection
+                    label={{ th: 'รายละเอียด', en: 'Details' }}
+                    clusters={detailClusters}
+                    displayMode="detail-editorial"
+                    workTitle={work.title}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ── Designer's note ─────────────────────────────────────── */}
+            <WorkDesignerNote note={work.designerNote ?? null} />
+
+            {/* ── Footer (share + back link) ─────────────────────────── */}
+            <WorkFooter url={workUrl} title={work.title} />
+
+            {/* Tags row — full list at page end */}
+            {tagNames.length > 0 && (
+              <ul className="mt-10 flex flex-wrap gap-2 px-0" aria-label="แท็ก">
+                {tagNames.map((name) => (
+                  <li
+                    key={name}
+                    className="rounded-full bg-bg2 px-3 py-1 text-xs text-ink"
+                  >
+                    #{name}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Mobile: sidebar items reflow below footer */}
+            <div className="lg:hidden mt-8 space-y-4">
+              <WorkCTACard style={work.style ?? null} />
+              <RecentWorksCard works={sidebarRelated} />
             </div>
           </div>
-        )}
 
-        {/*
-         * ── Chapter 05: รายละเอียด / Details ────────────────────────────────
-         * Entire chapter skipped when detailClusters is empty.
-         * Uses existing WorkGallerySection (no modification to that component).
-         */}
-        {detailClusters.length > 0 && (
-          <div className="mt-24">
-            <FadeUp>
-              <WorkChapterDivider
-                number="05"
-                th="รายละเอียด"
-                en="Details"
-              />
-            </FadeUp>
-
-            <div className="-mx-4 md:-mx-6 mt-8">
-              <WorkGallerySection
-                label={{ th: 'รายละเอียด', en: 'Details' }}
-                clusters={detailClusters}
-                displayMode="detail-editorial"
-                workTitle={work.title}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ── S18: Designer's note ─────────────────────────────────────────── */}
-        <WorkDesignerNote note={work.designerNote ?? null} />
-
-        {/* ── S19: CTA card ────────────────────────────────────────────────── */}
-        <WorkCTACard style={work.style ?? null} />
-
-        {/* ── S20: Related works (bottom discovery grid) ─────────────────── */}
-        <WorkRelatedSection works={bottomRelated} />
-
-        {/*
-         * ── S21: Tags row ─────────────────────────────────────────────────────
-         * v2: shown at page bottom for both mobile and desktop
-         * (v1 had md:hidden — removed per spec §S21).
-         */}
-        {tagNames.length > 0 && (
-          <ul
-            className="mt-10 flex flex-wrap gap-2 px-0"
-            aria-label="แท็ก"
+          {/* Sidebar — desktop only, sticky */}
+          <aside
+            className="hidden lg:flex flex-col gap-4 sticky top-[6.5rem] max-h-[calc(100vh-7rem)] min-h-0"
+            aria-label="แถบข้างผลงาน"
           >
-            {tagNames.map((name) => (
-              <li
-                key={name}
-                className="rounded-full bg-bg2 px-3 py-1 text-xs text-ink"
-              >
-                #{name}
-              </li>
-            ))}
-          </ul>
-        )}
-      </article>
+            {presentChapters.length > 1 && (
+              <WorkChaptersNav chapters={presentChapters} />
+            )}
+            <FadeUp>
+              <WorkCTACard style={work.style ?? null} />
+            </FadeUp>
+            {sidebarRelated.length > 0 && (
+              <FadeUp delay={0.05}>
+                <RecentWorksCard works={sidebarRelated} />
+              </FadeUp>
+            )}
+          </aside>
+        </div>
+      </div>
 
-      {/* JSON-LD structured data — unchanged from v1 (SEO-audited and locked) */}
+      {/* ── Related works strip (bg-bg2 alt section, parity with blog) ── */}
+      <WorkRelatedSection works={bottomRelated} />
+
+      {/* Back-to-top FAB */}
+      <BackToTop />
+
+      {/* JSON-LD structured data — unchanged from v1 (SEO-locked) */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(creativeWorkLd) }}

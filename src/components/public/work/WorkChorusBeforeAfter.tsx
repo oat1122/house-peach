@@ -29,11 +29,14 @@ export function WorkChorusBeforeAfter({ pair }: Props) {
     <div className="-mx-4 md:-mx-6">
       {/* rounded-none overrides BeforeAfterCard's default figure className —
           the chorus pair is full-bleed, no radius (spec §S10 + red-line #5) */}
+      {/* priority=true — chorus pair is LCP-adjacent; all other B/A callers
+           omit priority so they don't eagerly preload below-fold images. */}
       <BeforeAfterCard
         before={pair.before}
         after={pair.after}
         caption={null}
         className="rounded-none"
+        priority
       />
       {pair.caption && (
         <p className="mt-2 px-4 text-xs md:text-sm text-muted-brand text-center font-sans italic">

@@ -2,6 +2,7 @@ import 'server-only';
 import type { Metadata } from 'next';
 
 import { env } from '@/env';
+import type { PostRow } from '@/lib/db/schema/posts';
 import type { WorkRow } from '@/lib/db/schema/works';
 
 const ROOM_TYPE_LABEL_FOR_SEO: Record<string, string> = {
@@ -82,6 +83,71 @@ export function buildWorkMetadata(params: {
     twitter: {
       card: ogImage ? 'summary_large_image' : 'summary',
       title: work.title,
+      description,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+    ...(robots ? { robots } : {}),
+  };
+}
+
+/**
+ * Pad a too-short excerpt into a meta description meeting the 80-160 char
+ * target. Long excerpts are returned as-is (zod caps at 280 chars in
+ * PostInsert, and Google truncates at ~160 anyway).
+ */
+function ensurePostDescriptionFloor(post: PostRow, min = 80): string {
+  if (post.excerpt.length >= min) return post.excerpt;
+  const padding = ` · บทความเกี่ยวกับการตกแต่งบ้านโดย house-peach`;
+  return (post.excerpt + padding).slice(0, 160);
+}
+
+/**
+ * Build Next.js `Metadata` for a blog post detail route.
+ * Mirrors `buildWorkMetadata` conventions: title template suffix from root
+ * layout, description 80-160 chars, OG `type='article'` with all article-
+ * specific time fields, and archived posts → `noindex, follow`.
+ *
+ * Canonical and OG URL use `encodeURIComponent(slug)` to stay byte-identical
+ * with what HTTP clients send on the wire for non-ASCII slugs.
+ */
+export function buildPostMetadata(params: {
+  post: PostRow;
+  coverPath: string | null;
+  authorName?: string | null;
+  tagNames?: string[];
+}): Metadata {
+  const { post, coverPath, authorName, tagNames = [] } = params;
+  const origin = env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+  const canonical = `${origin}/blog/${encodeURIComponent(post.slug)}`;
+  const ogImage = coverPath ? `${origin}${coverPath}` : undefined;
+  const description = ensurePostDescriptionFloor(post);
+  const robots =
+    post.status === 'archived'
+      ? { index: false, follow: true }
+      : post.status === 'draft'
+        ? { index: false, follow: false }
+        : undefined;
+
+  return {
+    title: post.title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: post.title,
+      description,
+      url: canonical,
+      type: 'article',
+      ...(post.publishedAt
+        ? { publishedTime: post.publishedAt.toISOString() }
+        : {}),
+      modifiedTime: post.updatedAt.toISOString(),
+      ...(authorName ? { authors: [authorName] } : {}),
+      ...(tagNames.length > 0 ? { tags: tagNames } : {}),
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+    twitter: {
+      card: ogImage ? 'summary_large_image' : 'summary',
+      title: post.title,
       description,
       ...(ogImage ? { images: [ogImage] } : {}),
     },

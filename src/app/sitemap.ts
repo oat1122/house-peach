@@ -3,6 +3,7 @@ import type { MetadataRoute } from 'next';
 import { desc, eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
+import { posts } from '@/lib/db/schema/posts';
 import { works } from '@/lib/db/schema/works';
 import { env } from '@/env';
 
@@ -23,22 +24,40 @@ import { env } from '@/env';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
 
-  const rows = await db
-    .select({
-      slug: works.slug,
-      updatedAt: works.updatedAt,
-      publishedAt: works.publishedAt,
-    })
-    .from(works)
-    .where(eq(works.status, 'published'))
-    .orderBy(desc(works.publishedAt));
+  // Fetch published works and posts in parallel — both are needed before we
+  // can assemble the sitemap and there is no dependency between them.
+  const [workRows, postRows] = await Promise.all([
+    db
+      .select({
+        slug: works.slug,
+        updatedAt: works.updatedAt,
+      })
+      .from(works)
+      .where(eq(works.status, 'published'))
+      .orderBy(desc(works.publishedAt)),
+    db
+      .select({
+        slug: posts.slug,
+        updatedAt: posts.updatedAt,
+      })
+      .from(posts)
+      .where(eq(posts.status, 'published'))
+      .orderBy(desc(posts.publishedAt)),
+  ]);
 
-  // Percent-encode the slug to match the canonical URL form emitted by
-  // buildWorkMetadata. Thai slugs render the same characters when decoded,
-  // and crawlers correctly de-duplicate, but staying byte-identical with
-  // the canonical avoids any ambiguity.
-  const workEntries: MetadataRoute.Sitemap = rows.map((r) => ({
+  // Percent-encode slugs to match the canonical URL form emitted by
+  // buildWorkMetadata / buildPostMetadata. Thai slugs render the same
+  // characters when decoded; staying byte-identical with the canonical
+  // avoids crawler de-duplication ambiguity.
+  const workEntries: MetadataRoute.Sitemap = workRows.map((r) => ({
     url: `${origin}/works/${encodeURIComponent(r.slug)}`,
+    lastModified: r.updatedAt,
+    changeFrequency: 'monthly',
+    priority: 0.7,
+  }));
+
+  const postEntries: MetadataRoute.Sitemap = postRows.map((r) => ({
+    url: `${origin}/blog/${encodeURIComponent(r.slug)}`,
     lastModified: r.updatedAt,
     changeFrequency: 'monthly',
     priority: 0.7,
@@ -46,6 +65,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     { url: `${origin}/`, changeFrequency: 'weekly', priority: 1.0 },
+    // Listing routes — static entries. `lastModified` omitted; Google
+    // tolerates absent lastmod and these listings change on every publish.
+    { url: `${origin}/works`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${origin}/blog`, changeFrequency: 'weekly', priority: 0.8 },
     ...workEntries,
+    ...postEntries,
   ];
 }

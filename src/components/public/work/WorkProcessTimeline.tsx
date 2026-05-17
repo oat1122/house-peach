@@ -68,8 +68,15 @@ export function WorkProcessTimeline({ images, workTitle }: Props) {
             </StaggerItem>
           ))}
         </Stagger>
-        {/* Desktop: horizontal stagger list */}
-        <Stagger as="ol" className="hidden md:flex flex-row gap-8 overflow-x-auto pb-4">
+        {/* Desktop: horizontal stagger list — tabIndex={0} makes the scroll
+             container keyboard-reachable; browsers natively handle arrow-key
+             scrolling on focused scrollable elements. */}
+        <Stagger
+          as="ol"
+          className="hidden md:flex flex-row gap-8 overflow-x-auto pb-4"
+          tabIndex={0}
+          aria-label="ลำดับกระบวนการ — เลื่อนซ้ายขวาด้วยปุ่มลูกศร"
+        >
           {steps.map((step) => (
             <StaggerItem as="li" key={step.mediaAssetId} className="w-48 flex-none">
               <DesktopStepContent step={step} />
@@ -93,7 +100,12 @@ export function WorkProcessTimeline({ images, workTitle }: Props) {
         </ol>
       </FadeUp>
       <FadeUp>
-        <ol className="hidden md:flex flex-row gap-8 overflow-x-auto pb-4">
+        {/* tabIndex={0} makes the horizontal scroll container keyboard-reachable */}
+        <ol
+          className="hidden md:flex flex-row gap-8 overflow-x-auto pb-4"
+          tabIndex={0}
+          aria-label="ลำดับกระบวนการ — เลื่อนซ้ายขวาด้วยปุ่มลูกศร"
+        >
           {steps.map((step) => (
             <li key={step.mediaAssetId} className="w-48 flex-none">
               <DesktopStepContent step={step} />
@@ -133,7 +145,7 @@ function StepContent({
     <div className="flex gap-3">
       {/* Left column: badge + vertical connector */}
       <div className="flex flex-col items-center flex-none w-8">
-        <div className="w-8 h-8 rounded-full bg-bg2 flex items-center justify-center text-brand-accent font-bold text-sm flex-none">
+        <div className="w-8 h-8 rounded-full bg-bg2 flex items-center justify-center text-ink font-bold text-sm flex-none">
           {step.stepNumber}
         </div>
         {!isLast && (
@@ -172,7 +184,7 @@ function DesktopStepContent({ step }: { step: StepData }) {
   return (
     <div>
       {/* Badge above the image */}
-      <div className="w-8 h-8 rounded-full bg-bg2 flex items-center justify-center text-brand-accent font-bold text-sm mb-3">
+      <div className="w-8 h-8 rounded-full bg-bg2 flex items-center justify-center text-ink font-bold text-sm mb-3">
         {step.stepNumber}
       </div>
       <div

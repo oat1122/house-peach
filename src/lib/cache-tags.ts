@@ -46,3 +46,17 @@ export const tags = {
   post: (id: number) => `post:${id}`,
   work: (id: number) => `work:${id}`,
 } as const;
+
+/**
+ * Full cache bust for a single post mutation. Combines tag-based
+ * revalidation (forward-compat for future `unstable_cache` wrapping) with
+ * path-based ISR busting (the actual effective mechanism today).
+ *
+ * Call this from every service function that mutates a post row.
+ * Mirrors the local `bumpWork(id)` pattern in `lib/services/work.ts`.
+ */
+export function bumpPostById(id: number) {
+  revalidateTag(tags.posts, 'max');
+  revalidateTag(tags.post(id), 'max');
+  bumpPostPaths();
+}

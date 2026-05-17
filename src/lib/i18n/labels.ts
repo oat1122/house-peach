@@ -49,6 +49,36 @@ export const labels = {
   budget700k1_5m: { en: '700,000 – 1.5M', th: '700,000 – 1.5M' },
   budget1_5mPlus: { en: '1.5M+', th: '1.5M ขึ้นไป' },
   projectInfo: { en: 'Project info', th: 'ข้อมูลโปรเจกต์' },
+
+  // ── Blog post detail + listing ─────────────────────────────────────────
+  breadcrumbBlog: { en: 'Journal', th: 'บทความ' },
+  byAuthor: { en: 'By', th: 'โดย' },
+  readingMinutes: { en: 'min read', th: 'นาที' },
+  tableOfContents: { en: 'Table of contents', th: 'สารบัญ' },
+  sharePost: { en: 'Share this post', th: 'แชร์บทความ' },
+  copyLink: { en: 'Copy link', th: 'คัดลอกลิงก์' },
+  copySuccess: { en: 'Copied!', th: 'คัดลอกแล้ว' },
+  backToBlog: { en: 'Back to all posts', th: 'กลับบทความทั้งหมด' },
+  relatedPosts: { en: 'You might also like', th: 'บทความที่คุณอาจสนใจ' },
+  recentPosts: { en: 'Recent posts', th: 'บทความล่าสุด' },
+  readMore: { en: 'Read more', th: 'อ่านเพิ่มเติม' },
+  backToTop: { en: 'Back to top', th: 'กลับขึ้นด้านบน' },
+  ctaKicker: { en: 'Interior design service', th: 'บริการตกแต่งบ้าน' },
+  ctaTitle: { en: 'Ready to transform your space?', th: 'พร้อมเปลี่ยนห้องของคุณ?' },
+  ctaDesc: {
+    en: 'Our team is ready to listen — no obligation.',
+    th: 'ทีมเราพร้อมรับฟัง ไม่มีข้อผูกมัด',
+  },
+  ctaButton: { en: 'Start a conversation', th: 'เริ่มบทสนทนา' },
+  blogListingTitle: { en: 'Journal', th: 'บทความ' },
+  blogListingSubtitle: {
+    en: 'Inspiration, techniques, and stories from house-peach',
+    th: 'แรงบันดาลใจ เทคนิค และเรื่องราวเบื้องหลัง house-peach',
+  },
+  filterAll: { en: 'All', th: 'ทั้งหมด' },
+  shareToFacebook: { en: 'Share to Facebook', th: 'แชร์ไปยัง Facebook' },
+  shareToX: { en: 'Share to X', th: 'แชร์ไปยัง X' },
+  shareToLine: { en: 'Share to LINE', th: 'แชร์ไปยัง LINE' },
 } as const satisfies Labels;
 
 export type LabelKey = keyof typeof labels;

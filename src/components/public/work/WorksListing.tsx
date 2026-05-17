@@ -41,11 +41,11 @@ export function WorksListing({
   if (!isFiltered && items.length === 0) {
     return (
       <div className="py-20 text-center">
-        <SearchX size={48} className="text-muted mx-auto mb-4" aria-hidden />
+        <SearchX size={48} className="text-muted-brand mx-auto mb-4" aria-hidden />
         <h2 className="text-xl font-semibold text-ink">
           ยังไม่มีผลงาน
         </h2>
-        <p className="text-sm text-muted mt-2">
+        <p className="text-sm text-muted-brand mt-2">
           กลับมาดูใหม่อีกครั้ง —{' '}
           <Link href="/contact" className="text-accent underline">
             ติดต่อเรา
@@ -59,11 +59,11 @@ export function WorksListing({
   if (isFiltered && items.length === 0) {
     return (
       <div className="py-20 text-center">
-        <SearchX size={48} className="text-muted mx-auto mb-4" aria-hidden />
+        <SearchX size={48} className="text-muted-brand mx-auto mb-4" aria-hidden />
         <h2 className="text-xl font-semibold text-ink">
           ยังไม่มีผลงานที่ตรงกับตัวกรองนี้
         </h2>
-        <p className="text-sm text-muted mt-2">
+        <p className="text-sm text-muted-brand mt-2">
           ลองเปลี่ยนตัวกรอง หรือ{' '}
           <Link href="/works" className="text-accent underline">
             ดูผลงานทั้งหมด →

@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { and, asc, count, desc, eq, inArray, ne, notInArray, or, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
@@ -82,9 +83,9 @@ export async function getWorkById(id: number): Promise<WorkDetail | null> {
   return { ...normalizeWorkRow(work), tagIds: tagRows.map((r) => r.tagId) };
 }
 
-export async function getPublishedWorkBySlug(
+export const getPublishedWorkBySlug = cache(async (
   slug: string,
-): Promise<WorkDetail | null> {
+): Promise<WorkDetail | null> => {
   // Try NFC first (current slugify() output + how browsers encode shared URLs).
   // If miss, fall back to NFKD — legacy rows written before slugify() was
   // taught to re-compose may still be stored decomposed; visually identical
@@ -109,7 +110,7 @@ export async function getPublishedWorkBySlug(
     .from(workTags)
     .where(eq(workTags.workId, work.id));
   return { ...normalizeWorkRow(work), tagIds: tagRows.map((r) => r.tagId) };
-}
+});
 
 export class WorkSlugTakenError extends Error {
   constructor() {

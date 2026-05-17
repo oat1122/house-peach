@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+Admin email: oat@gmail.com
+Display name: oat
+Password (min 12 chars): oat123456789
+Role (admin|editor) [admin]: admin
+Created user <oat@gmail.com> (role=admin) id=3
+
 ## Getting Started
 
 First, run the development server:
