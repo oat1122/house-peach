@@ -88,12 +88,16 @@ export default async function AdminPostsPage(props: {
             );
           })}
         </div>
+        <label htmlFor="post-search" className="sr-only">
+          ค้นหาบทความ
+        </label>
         <input
+          id="post-search"
           type="search"
           name="q"
           defaultValue={q ?? ''}
           placeholder="ค้นหา title หรือ slug…"
-          className="h-8 flex-1 rounded-md border border-border bg-background px-3 text-xs outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+          className="h-8 flex-1 rounded-md border border-border bg-background px-3 text-xs focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
         />
         {status !== 'all' && (
           <input type="hidden" name="status" value={status} />

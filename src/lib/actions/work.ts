@@ -13,6 +13,8 @@ import {
 } from '@/lib/services/work';
 import { WorkInsert, WorkUpdate } from '@/lib/validation/work';
 
+import { checkAdminWriteRateLimit } from './_adminRateLimit';
+
 const Id = z.coerce.number().int().positive();
 const StatusEnum = z.enum(['draft', 'published', 'archived']);
 
@@ -31,7 +33,9 @@ function flattenZodError(err: z.ZodError) {
 export async function createWorkAction(
   input: unknown,
 ): Promise<ActionResult<{ id: number }>> {
-  await requireRole();
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
   const parsed = WorkInsert.safeParse(input);
   if (!parsed.success) {
     return {
@@ -58,7 +62,9 @@ export async function createWorkAction(
 export async function updateWorkAction(
   input: unknown,
 ): Promise<ActionResult> {
-  await requireRole();
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
   const parsed = WorkUpdate.safeParse(input);
   if (!parsed.success) {
     return {
@@ -85,14 +91,18 @@ export async function updateWorkAction(
 const SetStatusInput = z.object({ id: Id, status: StatusEnum });
 
 export async function setWorkStatusAction(input: unknown): Promise<ActionResult> {
-  await requireRole();
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
   const { id, status } = SetStatusInput.parse(input);
   await setWorkStatusSvc(id, status);
   return { ok: true };
 }
 
 export async function deleteWorkAction(input: unknown): Promise<ActionResult> {
-  await requireRole();
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
   const { id } = z.object({ id: Id }).parse(input);
   await deleteWorkSvc(id);
   return { ok: true };

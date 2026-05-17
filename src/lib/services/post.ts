@@ -4,6 +4,7 @@ import { and, count, desc, eq, inArray, like, ne, or, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { bumpPostById, bumpTag, tags as cacheTags } from '@/lib/cache-tags';
+import { isDuplicateKeyError } from '@/lib/db/errors';
 import { mediaAssets } from '@/lib/db/schema/mediaAssets';
 import {
   posts,
@@ -438,33 +439,42 @@ export async function createPost(
   authorId: number,
 ): Promise<number> {
   await assertPostSlugAvailable(input.slug);
-  const id = await db.transaction(async (tx) => {
-    const result = await tx.insert(posts).values({
-      slug: input.slug,
-      title: input.title,
-      excerpt: input.excerpt,
-      bodyMdx: input.bodyMdx,
-      coverMediaAssetId: input.coverMediaAssetId ?? null,
-      status: input.status,
-      publishedAt:
-        input.status === 'published'
-          ? (input.publishedAt ?? new Date())
-          : null,
-      authorId,
-      readingTimeMin: readingTime(input.bodyMdx),
+  let id: number;
+  try {
+    id = await db.transaction(async (tx) => {
+      const result = await tx.insert(posts).values({
+        slug: input.slug,
+        title: input.title,
+        excerpt: input.excerpt,
+        bodyMdx: input.bodyMdx,
+        coverMediaAssetId: input.coverMediaAssetId ?? null,
+        status: input.status,
+        publishedAt:
+          input.status === 'published'
+            ? (input.publishedAt ?? new Date())
+            : null,
+        authorId,
+        readingTimeMin: readingTime(input.bodyMdx),
+      });
+      const insertId = (result as unknown as { insertId?: number }[])[0]?.insertId;
+      if (!insertId) throw new Error('Failed to insert post');
+
+      if (input.tagIds.length > 0) {
+        await ensurePostTagsExist(tx, input.tagIds);
+        await tx
+          .insert(postTags)
+          .values(input.tagIds.map((tagId) => ({ postId: insertId, tagId })));
+      }
+
+      return insertId;
     });
-    const insertId = (result as unknown as { insertId?: number }[])[0]?.insertId;
-    if (!insertId) throw new Error('Failed to insert post');
-
-    if (input.tagIds.length > 0) {
-      await ensurePostTagsExist(tx, input.tagIds);
-      await tx
-        .insert(postTags)
-        .values(input.tagIds.map((tagId) => ({ postId: insertId, tagId })));
-    }
-
-    return insertId;
-  });
+  } catch (err) {
+    // The pre-check `assertPostSlugAvailable` + INSERT is not atomic. The DB
+    // UNIQUE index on posts.slug catches the race; surface it as the same
+    // domain error so the action layer returns `fieldErrors.slug`.
+    if (isDuplicateKeyError(err)) throw new PostSlugTakenError();
+    throw err;
+  }
 
   bumpPostById(id);
   return id;
@@ -478,40 +488,45 @@ export async function createPost(
 export async function updatePost(input: PostUpdate): Promise<void> {
   if (input.slug) await assertPostSlugAvailable(input.slug, input.id);
 
-  await db.transaction(async (tx) => {
-    const set: Record<string, unknown> = {};
-    if (input.title !== undefined) set.title = input.title;
-    if (input.slug !== undefined) set.slug = input.slug;
-    if (input.excerpt !== undefined) set.excerpt = input.excerpt;
-    if (input.bodyMdx !== undefined) {
-      set.bodyMdx = input.bodyMdx;
-      set.readingTimeMin = readingTime(input.bodyMdx);
-    }
-    if (input.coverMediaAssetId !== undefined)
-      set.coverMediaAssetId = input.coverMediaAssetId ?? null;
-    if (input.status !== undefined) {
-      set.status = input.status;
-      if (input.status === 'published') {
-        // Stamp publishedAt only on the first publish — preserve original
-        // date through archive/unarchive cycles.
-        set.publishedAt = sql`COALESCE(${posts.publishedAt}, NOW())`;
+  try {
+    await db.transaction(async (tx) => {
+      const set: Record<string, unknown> = {};
+      if (input.title !== undefined) set.title = input.title;
+      if (input.slug !== undefined) set.slug = input.slug;
+      if (input.excerpt !== undefined) set.excerpt = input.excerpt;
+      if (input.bodyMdx !== undefined) {
+        set.bodyMdx = input.bodyMdx;
+        set.readingTimeMin = readingTime(input.bodyMdx);
       }
-    }
-
-    if (Object.keys(set).length > 0) {
-      await tx.update(posts).set(set).where(eq(posts.id, input.id));
-    }
-
-    if (input.tagIds !== undefined) {
-      await tx.delete(postTags).where(eq(postTags.postId, input.id));
-      if (input.tagIds.length > 0) {
-        await ensurePostTagsExist(tx, input.tagIds);
-        await tx
-          .insert(postTags)
-          .values(input.tagIds.map((tagId) => ({ postId: input.id, tagId })));
+      if (input.coverMediaAssetId !== undefined)
+        set.coverMediaAssetId = input.coverMediaAssetId ?? null;
+      if (input.status !== undefined) {
+        set.status = input.status;
+        if (input.status === 'published') {
+          // Stamp publishedAt only on the first publish — preserve original
+          // date through archive/unarchive cycles.
+          set.publishedAt = sql`COALESCE(${posts.publishedAt}, NOW())`;
+        }
       }
-    }
-  });
+
+      if (Object.keys(set).length > 0) {
+        await tx.update(posts).set(set).where(eq(posts.id, input.id));
+      }
+
+      if (input.tagIds !== undefined) {
+        await tx.delete(postTags).where(eq(postTags.postId, input.id));
+        if (input.tagIds.length > 0) {
+          await ensurePostTagsExist(tx, input.tagIds);
+          await tx
+            .insert(postTags)
+            .values(input.tagIds.map((tagId) => ({ postId: input.id, tagId })));
+        }
+      }
+    });
+  } catch (err) {
+    if (isDuplicateKeyError(err)) throw new PostSlugTakenError();
+    throw err;
+  }
 
   bumpPostById(input.id);
 }

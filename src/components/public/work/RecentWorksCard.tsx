@@ -39,7 +39,7 @@ export function RecentWorksCard({ works, title = 'ผลงานที่คล
             <WorkCardCompact
               slug={w.slug}
               title={w.title}
-              coverPath={w.coverPath ?? ''}
+              coverPath={w.coverPath}
               roomType={w.roomType}
               style={w.style}
               yearCompleted={w.yearCompleted}

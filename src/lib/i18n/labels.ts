@@ -79,6 +79,92 @@ export const labels = {
   shareToFacebook: { en: 'Share to Facebook', th: 'แชร์ไปยัง Facebook' },
   shareToX: { en: 'Share to X', th: 'แชร์ไปยัง X' },
   shareToLine: { en: 'Share to LINE', th: 'แชร์ไปยัง LINE' },
+
+  // ── Contact page (public /contact) ─────────────────────────────────────
+  contactKicker: { en: 'Start a project · เริ่มโปรเจกต์', th: 'Start a project · เริ่มโปรเจกต์' },
+  contactHeroTitle: {
+    en: "Let's talk about the home you've been dreaming of",
+    th: 'มาคุยเรื่องบ้านที่คุณฝันถึงกัน',
+  },
+  contactHeroLead: {
+    en: 'Share a few details about your space — we will reply within 2 business days.',
+    th: 'เล่ารายละเอียดเกี่ยวกับห้องของคุณสักหน่อย เราจะตอบกลับภายใน 2 วันทำการ',
+  },
+  contactFormName: { en: 'Your name', th: 'ชื่อของคุณ' },
+  contactFormEmail: { en: 'Email', th: 'อีเมล' },
+  contactFormPhone: { en: 'Phone (optional)', th: 'เบอร์โทร (ไม่บังคับ)' },
+  contactFormService: { en: 'Service type', th: 'ประเภทบริการ' },
+  contactFormBudget: { en: 'Budget range (optional)', th: 'งบประมาณ (ไม่บังคับ)' },
+  contactFormBudgetPlaceholder: { en: 'Select a range', th: 'เลือกช่วงงบประมาณ' },
+  contactFormDescription: { en: 'Tell us about your project', th: 'เล่าเกี่ยวกับโปรเจกต์ของคุณ' },
+  contactFormDescriptionHelp: {
+    en: 'Room type, style, timeline, anything that helps us understand your space.',
+    th: 'ประเภทห้อง สไตล์ที่ชอบ ช่วงเวลา หรือสิ่งใดก็ตามที่จะช่วยให้เราเข้าใจห้องของคุณ',
+  },
+  contactFormSubmit: { en: 'Send message', th: 'ส่งข้อความ' },
+  contactFormSubmitting: { en: 'Sending…', th: 'กำลังส่ง…' },
+  contactSuccessTitle: { en: 'Thank you — message received', th: 'ขอบคุณ — ได้รับข้อความแล้ว' },
+  contactSuccessBody: {
+    en: 'We will reply to your email within 2 business days.',
+    th: 'เราจะตอบกลับทางอีเมลของคุณภายใน 2 วันทำการ',
+  },
+  contactSuccessSecondaryCta: { en: 'Browse our works', th: 'ดูผลงานของเรา' },
+  contactErrorGeneric: {
+    en: 'Could not send — please try again.',
+    th: 'ส่งข้อความไม่สำเร็จ — ลองใหม่อีกครั้ง',
+  },
+  // service type labels (public dropdown + admin badge)
+  serviceFullDesign: { en: 'Full interior design', th: 'ออกแบบทั้งหมด' },
+  serviceConsultation: { en: 'Consultation', th: 'ปรึกษาออกแบบ' },
+  servicePartial: { en: 'Partial / single room', th: 'บางส่วน / ห้องเดียว' },
+  serviceOther: { en: 'Other', th: 'อื่น ๆ' },
+  // ── Admin /inquiries ───────────────────────────────────────────────────
+  inquiryStatusNew: { en: 'New', th: 'ใหม่' },
+  inquiryStatusContacted: { en: 'Contacted', th: 'ติดต่อแล้ว' },
+  inquiryStatusClosed: { en: 'Closed', th: 'ปิดงาน' },
+
+  // ── Home page copy ─────────────────────────────────────────────────────
+  homeHeroEyebrow: { en: 'Works', th: 'ผลงาน' },
+  homeHeroH1Line1: { en: 'Rooms that feel', th: 'ห้องที่อบอุ่น' },
+  homeHeroH1Line2: { en: 'like a hug', th: 'เหมือนกอด' },
+  homeHeroLead: {
+    en: 'Quiet rooms. Soft details. Genuine warmth.',
+    th: 'ห้องดี ไม่ต้องดัง ดีเทลเรียบ อบอุ่มถึงใจ',
+  },
+  homeHeroCtaPrimary: { en: 'See our work', th: 'ดูผลงาน' },
+  homeHeroCtaSecondary: { en: 'Start a project →', th: 'เริ่มโปรเจกต์ →' },
+  homeStatsTitle: { en: 'Who we are', th: 'เกี่ยวกับเรา' },
+  homeStatsBody: {
+    en: 'A warm-tone minimalist studio based in Bangkok',
+    th: 'สตูดิโอตกแต่งบ้านแนว warm-tone minimalist กรุงเทพฯ',
+  },
+  homeStat1Value: { en: '12+', th: '12+' },
+  homeStat1Label: { en: 'Projects', th: 'ผลงาน' },
+  homeStat2Value: { en: '80+', th: '80+' },
+  homeStat2Label: { en: 'Clients', th: 'ลูกค้า' },
+  homeStat3Value: { en: '4.9★', th: '4.9★' },
+  homeStat3Label: { en: 'Reviews', th: 'รีวิว' },
+  homeDiscoverEyebrow: { en: 'Featured work', th: 'ผลงานเด่น' },
+  homeDiscoverH2: { en: 'Find work that speaks to you', th: 'ค้นพบงานออกแบบที่ใช่สำหรับคุณ' },
+  homeDiscoverBody: {
+    en: 'We specialise in warm-tone minimalist interiors at every scale — from a single room to a full house.',
+    th: 'เราเชี่ยวชาญงานตกแต่งภายในแนว warm-tone minimalist ทุกขนาดพื้นที่ ตั้งแต่ห้องเดี่ยวจนถึงบ้านทั้งหลัง',
+  },
+  homeDiscoverSeeAll: { en: 'See all works →', th: 'ดูผลงานทั้งหมด →' },
+  homeAboutEyebrow: { en: 'About us', th: 'เกี่ยวกับเรา' },
+  homeAboutH2: { en: 'A warm-tone interior studio', th: 'สตูดิโอตกแต่งบ้านสไตล์ warm-tone' },
+  homeAboutBody1: {
+    en: 'We believe a great home should feel warm — whatever the size.',
+    th: 'เราเชื่อว่าบ้านที่ดีควรรู้สึกอบอุ่น ไม่ว่าจะขนาดเท่าไหร่',
+  },
+  homeAboutBody2: {
+    en: 'Working with care for detail — from concept to handover.',
+    th: 'ทำงานด้วยความใส่ใจในรายละเอียด ตั้งแต่ concept จนจบโปรเจกต์',
+  },
+  homeAboutCta: { en: 'Start a project', th: 'เริ่มโปรเจกต์' },
+  homeRecentEyebrow: { en: 'Recent works', th: 'ผลงานล่าสุด' },
+  homeRecentH2: { en: 'Our latest work', th: 'งานล่าสุดของเรา' },
+  homeRecentSeeAll: { en: 'See all works →', th: 'ดูผลงานทั้งหมด →' },
 } as const satisfies Labels;
 
 export type LabelKey = keyof typeof labels;

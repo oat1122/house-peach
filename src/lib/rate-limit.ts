@@ -43,10 +43,38 @@ export function rateLimit(
   };
 }
 
-/** Extract a best-effort client IP from forwarded headers. */
+/**
+ * Extract a best-effort client IP from forwarded headers.
+ *
+ * Security note: the LEFTMOST entry of `X-Forwarded-For` is supplied by the
+ * client and is spoofable — an attacker can send `X-Forwarded-For: 1.2.3.4`
+ * to make every rate-limit counter look like it belongs to a different
+ * victim. The RIGHTMOST entry is the IP that the immediate upstream proxy
+ * observed at its socket, which the proxy appends and the client cannot
+ * forge. We default to "1 trusted proxy" (the typical single-Nginx setup),
+ * controllable via `TRUSTED_PROXY_COUNT` env if more proxy hops exist.
+ *
+ * Falls back to `X-Real-IP` (set by Nginx from the real socket) then to
+ * `CF-Connecting-IP` (Cloudflare's authoritative client IP, never client-set).
+ * Both are safer than trusting the XFF leftmost entry.
+ */
 export function clientIp(headers: Headers): string {
+  const trustedHops = Math.max(
+    1,
+    Number(process.env.TRUSTED_PROXY_COUNT ?? 1) || 1,
+  );
+
   const fwd = headers.get('x-forwarded-for');
-  if (fwd) return fwd.split(',')[0]!.trim();
+  if (fwd) {
+    const parts = fwd
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (parts.length > 0) {
+      const idx = Math.max(0, parts.length - trustedHops);
+      return parts[idx]!;
+    }
+  }
   return (
     headers.get('x-real-ip') ??
     headers.get('cf-connecting-ip') ??

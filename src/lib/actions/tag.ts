@@ -11,6 +11,8 @@ import {
 } from '@/lib/services/tag';
 import { TagInsert, TagUpdate } from '@/lib/validation/tag';
 
+import { checkAdminWriteRateLimit } from './_adminRateLimit';
+
 const Id = z.coerce.number().int().positive();
 
 export type ActionResult<T = undefined> =
@@ -28,7 +30,9 @@ function flattenZodError(err: z.ZodError) {
 export async function createTagAction(
   input: unknown,
 ): Promise<ActionResult<{ id: number }>> {
-  await requireRole();
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
   const parsed = TagInsert.safeParse(input);
   if (!parsed.success) {
     return {
@@ -55,7 +59,9 @@ export async function createTagAction(
 export async function updateTagAction(
   input: unknown,
 ): Promise<ActionResult> {
-  await requireRole();
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
   const parsed = TagUpdate.safeParse(input);
   if (!parsed.success) {
     return {
@@ -80,7 +86,9 @@ export async function updateTagAction(
 }
 
 export async function deleteTagAction(input: unknown): Promise<ActionResult> {
-  await requireRole();
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
   const { id } = z.object({ id: Id }).parse(input);
   await deleteTagSvc(id);
   return { ok: true };

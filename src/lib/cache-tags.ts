@@ -30,6 +30,8 @@ export function bumpWorkPaths() {
   revalidatePath('/works/[slug]', 'page');
   revalidatePath('/works');
   revalidatePath('/sitemap.xml');
+  revalidatePath('/llms.txt');
+  revalidatePath('/llms-full.txt');
 }
 
 /** Same idea as bumpWorkPaths but for blog posts. Wired in once /blog ships. */
@@ -37,6 +39,8 @@ export function bumpPostPaths() {
   revalidatePath('/blog/[slug]', 'page');
   revalidatePath('/blog');
   revalidatePath('/sitemap.xml');
+  revalidatePath('/llms.txt');
+  revalidatePath('/llms-full.txt');
 }
 
 export const tags = {
@@ -59,6 +63,18 @@ export function bumpPostById(id: number) {
   revalidateTag(tags.posts, 'max');
   revalidateTag(tags.post(id), 'max');
   bumpPostPaths();
+}
+
+/**
+ * Full cache bust for a single work mutation. Mirrors `bumpPostById` — keeps
+ * the per-domain invariant in one place rather than duplicating the helper
+ * across `lib/services/work.ts` + `lib/services/workImage.ts`.
+ */
+export function bumpWorkById(id: number) {
+  revalidateTag(tags.works, 'max');
+  revalidateTag(tags.work(id), 'max');
+  revalidateTag(tags.sitemap, 'max');
+  bumpWorkPaths();
 }
 
 /**

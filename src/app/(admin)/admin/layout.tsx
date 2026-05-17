@@ -44,11 +44,26 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <TooltipProvider delay={120}>
       <ConfirmProvider>
+        {/* Skip link — visually hidden until keyboard-focused; jumps past
+            sidebar + topbar to the page <main>. WCAG 2.4.1 Bypass Blocks. */}
+        <a
+          href="#admin-main"
+          className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-foreground focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-medium focus-visible:text-background focus-visible:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          ข้ามไปยังเนื้อหา
+        </a>
+
         <SidebarProvider defaultOpen={sidebarOpen}>
           <AdminSidebar user={user} />
           <SidebarInset>
             <AdminTopbar />
-            <div className="flex flex-1 flex-col">{children}</div>
+            <main
+              id="admin-main"
+              tabIndex={-1}
+              className="flex flex-1 flex-col focus-visible:outline-none"
+            >
+              {children}
+            </main>
           </SidebarInset>
         </SidebarProvider>
         <Toaster position="top-right" richColors closeButton />

@@ -12,6 +12,8 @@ import {
 } from '@/lib/services/post';
 import { PostInsert, PostUpdate } from '@/lib/validation/post';
 
+import { checkAdminWriteRateLimit } from './_adminRateLimit';
+
 const Id = z.coerce.number().int().positive();
 const StatusEnum = z.enum(['draft', 'published', 'archived']);
 
@@ -35,6 +37,8 @@ export async function createPostAction(
   if (!authorId || !Number.isFinite(Number(authorId))) {
     return { ok: false, error: 'ไม่พบ user id ใน session' };
   }
+  const blocked = checkAdminWriteRateLimit(authorId);
+  if (blocked) return blocked;
   const parsed = PostInsert.safeParse(input);
   if (!parsed.success) {
     return {
@@ -61,7 +65,9 @@ export async function createPostAction(
 export async function updatePostAction(
   input: unknown,
 ): Promise<ActionResult> {
-  await requireRole();
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
   const parsed = PostUpdate.safeParse(input);
   if (!parsed.success) {
     return {
@@ -88,14 +94,18 @@ export async function updatePostAction(
 const SetStatusInput = z.object({ id: Id, status: StatusEnum });
 
 export async function setPostStatusAction(input: unknown): Promise<ActionResult> {
-  await requireRole();
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
   const { id, status } = SetStatusInput.parse(input);
   await setPostStatusSvc(id, status);
   return { ok: true };
 }
 
 export async function deletePostAction(input: unknown): Promise<ActionResult> {
-  await requireRole();
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
   const { id } = z.object({ id: Id }).parse(input);
   await deletePostSvc(id);
   return { ok: true };

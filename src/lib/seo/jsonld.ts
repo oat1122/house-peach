@@ -3,6 +3,7 @@ import 'server-only';
 import { env } from '@/env';
 import type { PostRow } from '@/lib/db/schema/posts';
 import type { WorkRow } from '@/lib/db/schema/works';
+import { resolveRoomTypeLabel } from '@/lib/utils/workLabels';
 
 type CreativeWorkLdInput = {
   work: WorkRow;
@@ -19,22 +20,39 @@ type CreativeWorkLdInput = {
  *     markup. We only emit fields we can verify against the DB row.
  *   - Image URLs are absolute (origin from env.NEXT_PUBLIC_SITE_URL).
  *   - `dateCreated` uses `yearCompleted` if present, otherwise omits.
+ *
+ * Schema.org conformance notes:
+ *   - `about` must be human-readable (Thing or text), not an internal enum.
+ *     We resolve `work.roomType` ('living' | 'bedroom' | ...) through the
+ *     shared label helper so Google receives "ห้องนั่งเล่น" instead of "living".
+ *   - `genre` is reserved for artistic genre on `CreativeWork` (Drama / Jazz),
+ *     not interior-design style. Style is folded into `keywords` instead.
+ *   - `mainEntityOfPage` ties the JSON-LD to the rendered URL — required for
+ *     reliable Rich Results parsing (`/blog` BlogPosting also emits it).
  */
 export function buildCreativeWorkLd(input: CreativeWorkLdInput) {
   const { work, coverPath, galleryPaths = [], tagNames = [] } = input;
   const origin = env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+  const url = `${origin}/works/${encodeURIComponent(work.slug)}`;
   const allImages = [coverPath, ...galleryPaths]
     .filter((p): p is string => typeof p === 'string' && p.length > 0)
     .map((p) => `${origin}${p}`);
+
+  // Style is not a valid Schema.org `genre`; surface it via `keywords` so it
+  // still contributes to topical relevance without misleading structured data.
+  const keywords = [...tagNames, work.style ?? null]
+    .filter((s): s is string => typeof s === 'string' && s.length > 0)
+    .join(', ');
 
   const ld: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'CreativeWork',
     name: work.title,
     description: work.summary,
-    url: `${origin}/works/${encodeURIComponent(work.slug)}`,
+    url,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
     creator: { '@type': 'Organization', name: 'house-peach' },
-    about: work.roomType,
+    about: { '@type': 'Thing', name: resolveRoomTypeLabel(work.roomType) },
     // dateModified is a freshness signal Google uses for creative content.
     // `works.updated_at` auto-updates on every row write, so this stays
     // accurate without explicit caller work.
@@ -51,11 +69,8 @@ export function buildCreativeWorkLd(input: CreativeWorkLdInput) {
   if (work.location) {
     ld.contentLocation = { '@type': 'Place', name: work.location };
   }
-  if (tagNames.length > 0) {
-    ld.keywords = tagNames.join(', ');
-  }
-  if (work.style) {
-    ld.genre = work.style;
+  if (keywords.length > 0) {
+    ld.keywords = keywords;
   }
 
   return ld;

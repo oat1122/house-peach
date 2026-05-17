@@ -120,9 +120,20 @@ export function MdxEditor({
 
   const handlePickImage = useCallback(
     (asset: PickerAsset) => {
-      const altSafe = (asset.alt || asset.title || 'image')
-        .replace(/"/g, '\\"');
-      replaceSelection(`\n<MDXImage src="${asset.path}" alt="${altSafe}" />\n`);
+      // Escape every character that could break out of a JSX attribute value
+      // (backslash → escape itself first; double-quote → close quote; newline
+      // → JSX literal newline inside an attribute is a parse error). Without
+      // this an asset whose alt/title contains `/>` or a newline could inject
+      // additional attributes (e.g. onError) past the MDX whitelist.
+      const escapeAttr = (s: string) =>
+        s
+          .replace(/\\/g, '\\\\')
+          .replace(/"/g, '\\"')
+          .replace(/[\r\n]+/g, ' ')
+          .trim();
+      const altSafe = escapeAttr(asset.alt || asset.title || 'image');
+      const srcSafe = escapeAttr(asset.path);
+      replaceSelection(`\n<MDXImage src="${srcSafe}" alt="${altSafe}" />\n`);
       setPickerOpen(false);
     },
     [replaceSelection],

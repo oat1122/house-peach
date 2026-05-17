@@ -310,7 +310,7 @@ export function WorkForm({
                 variant="outline"
                 size="sm"
                 onClick={autoSlug}
-                title="สร้าง slug จากหัวข้อ — เก็บไทยไว้"
+                aria-label="สร้าง slug จากหัวข้อ (เก็บภาษาไทย)"
               >
                 Auto
               </Button>
@@ -319,7 +319,7 @@ export function WorkForm({
                 variant="outline"
                 size="sm"
                 onClick={autoSlugAscii}
-                title="สร้าง slug แบบอังกฤษล้วน — แชร์บน social ได้สวยกว่า"
+                aria-label="สร้าง slug แบบอักษรละติน (แชร์บน social ได้สวยกว่า)"
               >
                 EN
               </Button>

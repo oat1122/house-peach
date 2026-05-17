@@ -1,7 +1,7 @@
 /**
  * Pure helpers for resolving work domain enum values to human-readable TH labels.
- * Extracted from page.tsx (where they lived as local constants) so they can be
- * reused by WorkMetaSidebar and future listing pages.
+ * Shared by the work detail page, WorkMetaRow, WorkCard variants, and the
+ * SEO metadata builder (lib/seo/metadata.ts).
  */
 
 export const ROOM_TYPE_LABELS_TH: Readonly<Record<string, string>> = {

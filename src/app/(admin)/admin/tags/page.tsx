@@ -74,12 +74,16 @@ export default async function AdminTagsPage(props: {
             );
           })}
         </div>
+        <label htmlFor="tag-search" className="sr-only">
+          ค้นหาแท็ก
+        </label>
         <input
+          id="tag-search"
           type="search"
           name="q"
           defaultValue={q ?? ''}
           placeholder="ค้นหา ชื่อ หรือ slug…"
-          className="h-8 flex-1 rounded-md border border-border bg-background px-3 text-xs outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+          className="h-8 flex-1 rounded-md border border-border bg-background px-3 text-xs focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
         />
         {kind !== 'all' && <input type="hidden" name="kind" value={kind} />}
         <Button type="submit" size="sm" variant="outline">

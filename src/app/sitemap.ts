@@ -69,6 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // tolerates absent lastmod and these listings change on every publish.
     { url: `${origin}/works`, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${origin}/blog`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${origin}/contact`, changeFrequency: 'yearly', priority: 0.5 },
     ...workEntries,
     ...postEntries,
   ];

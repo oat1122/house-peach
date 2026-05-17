@@ -1,14 +1,15 @@
 import 'server-only';
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import { and, asc, count, desc, eq, inArray, ne, notInArray, or, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { bumpTag, bumpWorkPaths, tags as cacheTags } from '@/lib/cache-tags';
+import { bumpWorkById, tags as cacheTags } from '@/lib/cache-tags';
+import { isDuplicateKeyError } from '@/lib/db/errors';
 import { mediaAssets } from '@/lib/db/schema/mediaAssets';
 import { tags as tagsTable } from '@/lib/db/schema/tags';
 import {
   works,
-  workImages,
   workTags,
   type BudgetRange,
   type RoomType,
@@ -130,64 +131,67 @@ async function assertSlugAvailable(slug: string, excludeId?: number) {
   }
 }
 
-function bumpWork(id: number) {
-  bumpTag(cacheTags.works);
-  bumpTag(cacheTags.work(id));
-  bumpTag(cacheTags.sitemap);
-  // Path-based bust is what actually clears the ISR cache for the public
-  // /works/[slug] and /works pages. See cache-tags.ts for the rationale.
-  bumpWorkPaths();
-}
-
 export async function createWork(input: WorkInsert): Promise<number> {
   await assertSlugAvailable(input.slug);
-  return db.transaction(async (tx) => {
-    const result = await tx.insert(works).values({
-      slug: input.slug,
-      title: input.title,
-      summary: input.summary,
-      bodyMdx: input.bodyMdx,
-      roomType: input.roomType,
-      style: input.style,
-      yearCompleted: input.yearCompleted ?? null,
-      location: input.location ?? null,
-      areaSqm: input.areaSqm != null ? String(input.areaSqm) : null,
-      budgetRange: input.budgetRange ?? null,
-      coverMediaAssetId: input.coverMediaAssetId ?? null,
-      tone: input.tone,
-      accent: input.accent,
-      status: input.status,
-      publishedAt:
-        input.status === 'published'
-          ? (input.publishedAt ?? new Date())
-          : null,
-      // v2.2 editorial fields — all nullable. createWork persists whatever the
-      // form sent; updateWork (below) is the long-term write path.
-      durationDays: input.durationDays ?? null,
-      clientQuote: input.clientQuote ?? null,
-      clientName: input.clientName ?? null,
-      designerNote: input.designerNote ?? null,
-      materials: input.materials ?? null,
+  // The pre-check + insert is not atomic. Two concurrent admins POSTing the
+  // same slug both pass the SELECT, then both reach this INSERT. The UNIQUE
+  // index on works.slug is the real guarantee; convert its 1062 error back
+  // into `WorkSlugTakenError` so the action layer returns `fieldErrors.slug`.
+  // Same pattern as services/tag.ts + services/post.ts.
+  try {
+    return await db.transaction(async (tx) => {
+      const result = await tx.insert(works).values({
+        slug: input.slug,
+        title: input.title,
+        summary: input.summary,
+        bodyMdx: input.bodyMdx,
+        roomType: input.roomType,
+        style: input.style,
+        yearCompleted: input.yearCompleted ?? null,
+        location: input.location ?? null,
+        areaSqm: input.areaSqm != null ? String(input.areaSqm) : null,
+        budgetRange: input.budgetRange ?? null,
+        coverMediaAssetId: input.coverMediaAssetId ?? null,
+        tone: input.tone,
+        accent: input.accent,
+        status: input.status,
+        publishedAt:
+          input.status === 'published'
+            ? (input.publishedAt ?? new Date())
+            : null,
+        // v2.2 editorial fields — all nullable. createWork persists whatever
+        // the form sent; updateWork (below) is the long-term write path.
+        durationDays: input.durationDays ?? null,
+        clientQuote: input.clientQuote ?? null,
+        clientName: input.clientName ?? null,
+        designerNote: input.designerNote ?? null,
+        materials: input.materials ?? null,
+      });
+      const insertId = (result as unknown as { insertId?: number }[])[0]
+        ?.insertId;
+      if (!insertId) throw new Error('Failed to insert work');
+
+      if (input.tagIds.length > 0) {
+        await ensureTagsExist(tx, input.tagIds);
+        await tx
+          .insert(workTags)
+          .values(input.tagIds.map((tagId) => ({ workId: insertId, tagId })));
+      }
+
+      bumpWorkById(insertId);
+      return insertId;
     });
-    const insertId = (result as unknown as { insertId?: number }[])[0]?.insertId;
-    if (!insertId) throw new Error('Failed to insert work');
-
-    if (input.tagIds.length > 0) {
-      await ensureTagsExist(tx, input.tagIds);
-      await tx
-        .insert(workTags)
-        .values(input.tagIds.map((tagId) => ({ workId: insertId, tagId })));
-    }
-
-    bumpWork(insertId);
-    return insertId;
-  });
+  } catch (err) {
+    if (isDuplicateKeyError(err)) throw new WorkSlugTakenError();
+    throw err;
+  }
 }
 
 export async function updateWork(input: WorkUpdate): Promise<void> {
   if (input.slug) await assertSlugAvailable(input.slug, input.id);
 
-  await db.transaction(async (tx) => {
+  try {
+    await db.transaction(async (tx) => {
     const set: Record<string, unknown> = {};
     if (input.title !== undefined) set.title = input.title;
     if (input.slug !== undefined) set.slug = input.slug;
@@ -244,8 +248,12 @@ export async function updateWork(input: WorkUpdate): Promise<void> {
       }
     }
   });
+  } catch (err) {
+    if (isDuplicateKeyError(err)) throw new WorkSlugTakenError();
+    throw err;
+  }
 
-  bumpWork(input.id);
+  bumpWorkById(input.id);
 }
 
 export async function setWorkStatus(
@@ -259,15 +267,13 @@ export async function setWorkStatus(
     set.publishedAt = sql`COALESCE(${works.publishedAt}, NOW())`;
   }
   await db.update(works).set(set).where(eq(works.id, id));
-  bumpWork(id);
+  bumpWorkById(id);
 }
 
 export async function deleteWork(id: number): Promise<void> {
   // FK ON DELETE CASCADE cleans work_images / work_tags / media_pairs links.
   await db.delete(works).where(eq(works.id, id));
-  bumpTag(cacheTags.works);
-  bumpTag(cacheTags.work(id));
-  bumpTag(cacheTags.sitemap);
+  bumpWorkById(id);
 }
 
 async function ensureTagsExist(
@@ -416,9 +422,6 @@ export async function listWorkTagOptions() {
     .orderBy(tagsTable.sort, tagsTable.name);
 }
 
-/** Silence the unused import — workImages is exported here so Phase B can re-use the column references. */
-export const _workImagesRef = workImages;
-
 // ── Public listing queries ─────────────────────────────────────
 
 /**
@@ -445,8 +448,20 @@ export type WorkPublicListItem = {
  * Paginated list of published works for the public /works listing page.
  * Filters compose with AND. tagSlug filter: if the tag doesn't exist, returns empty.
  * Ordering: published_at DESC, created_at DESC (stability on same publish date).
+ *
+ * Wrapped in `unstable_cache` keyed on the input args + tagged with the shared
+ * `'works'` tag — every `bumpWorkById(...)` from a mutation calls
+ * `revalidateTag('works')` which busts all filter/page combinations at once.
+ * This removes the need for `force-dynamic` on the page; ISR + cached fetch =
+ * 0 DB roundtrips on cache hit.
  */
-export async function listPublishedWorks(input: {
+export const listPublishedWorks = unstable_cache(
+  listPublishedWorksUncached,
+  ['works:listPublished'],
+  { tags: [cacheTags.works], revalidate: 60 },
+);
+
+async function listPublishedWorksUncached(input: {
   page: number;
   limit: number;
   roomType?: RoomType;
@@ -520,8 +535,18 @@ export async function listPublishedWorks(input: {
  * Distinct style values from all published works, sorted A–Z.
  * Used to populate the style filter <Select> on the /works listing page.
  * Returns [] when no published works exist.
+ *
+ * Cached alongside `listPublishedWorks` — same `'works'` tag, same revalidate
+ * window. Style values change only when a work is created/updated/deleted, so
+ * bumping the shared tag covers all invalidation paths.
  */
-export async function listDistinctWorkStyles(): Promise<string[]> {
+export const listDistinctWorkStyles = unstable_cache(
+  listDistinctWorkStylesUncached,
+  ['works:distinctStyles'],
+  { tags: [cacheTags.works], revalidate: 60 },
+);
+
+async function listDistinctWorkStylesUncached(): Promise<string[]> {
   const rows = await db
     .selectDistinct({ style: works.style })
     .from(works)

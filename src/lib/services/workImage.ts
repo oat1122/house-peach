@@ -1,8 +1,8 @@
 import 'server-only';
-import { and, asc, eq, inArray, max, notInArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, max } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { bumpTag, bumpWorkPaths, tags as cacheTags } from '@/lib/cache-tags';
+import { bumpWorkById } from '@/lib/cache-tags';
 import { mediaAssets, type MediaAssetRow } from '@/lib/db/schema/mediaAssets';
 import { mediaPairs } from '@/lib/db/schema/mediaPairs';
 import { works, workImages } from '@/lib/db/schema/works';
@@ -28,14 +28,6 @@ export type WorkImageListItem = {
   isCover: boolean;
   isFeatured: boolean;
 };
-
-function bumpWork(workId: number) {
-  bumpTag(cacheTags.works);
-  bumpTag(cacheTags.work(workId));
-  bumpTag(cacheTags.sitemap);
-  // Path-based bust — see cache-tags.ts. This is what actually clears ISR.
-  bumpWorkPaths();
-}
 
 export async function listWorkImages(
   workId: number,
@@ -132,7 +124,7 @@ export async function attachAssetsToWork(input: AttachAssetsInput) {
     }
   });
 
-  bumpWork(workId);
+  bumpWorkById(workId);
 }
 
 /**
@@ -205,7 +197,7 @@ export async function attachPairToWork(input: AttachPairInput) {
     }
   });
 
-  bumpWork(workId);
+  bumpWorkById(workId);
 }
 
 /**
@@ -244,7 +236,7 @@ export async function reorderWorkImages(input: ReorderInput) {
     }
   });
 
-  bumpWork(workId);
+  bumpWorkById(workId);
 }
 
 export async function updateWorkImageKind(input: UpdateKindInput) {
@@ -258,7 +250,7 @@ export async function updateWorkImageKind(input: UpdateKindInput) {
         eq(workImages.mediaAssetId, mediaAssetId),
       ),
     );
-  bumpWork(workId);
+  bumpWorkById(workId);
 }
 
 export async function updateWorkImageCaption(input: UpdateCaptionInput) {
@@ -272,7 +264,7 @@ export async function updateWorkImageCaption(input: UpdateCaptionInput) {
         eq(workImages.mediaAssetId, mediaAssetId),
       ),
     );
-  bumpWork(workId);
+  bumpWorkById(workId);
 }
 
 export async function setWorkCover(input: SetCoverInput) {
@@ -295,7 +287,7 @@ export async function setWorkCover(input: SetCoverInput) {
     .update(works)
     .set({ coverMediaAssetId: mediaAssetId })
     .where(eq(works.id, workId));
-  bumpWork(workId);
+  bumpWorkById(workId);
 }
 
 /**
@@ -319,7 +311,7 @@ export async function setWorkImageFeatured(input: SetFeaturedInput) {
   const affected = (result as unknown as { affectedRows?: number }[])[0]
     ?.affectedRows;
   if (affected === 0) throw new Error('รูปนี้ไม่ได้อยู่ใน work');
-  bumpWork(workId);
+  bumpWorkById(workId);
 }
 
 export async function removeWorkImage(input: RemoveInput) {
@@ -410,9 +402,6 @@ export async function removeWorkImage(input: RemoveInput) {
     }
   });
 
-  bumpWork(workId);
+  bumpWorkById(workId);
 }
 
-// Mark unused imports as intentional re-exports — server file imports get
-// shaken at build, but the linter is conservative.
-export const _unused = { notInArray, sql };

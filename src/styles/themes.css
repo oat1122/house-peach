@@ -8,6 +8,17 @@
  * Reference: home_decor_minimal_palette.html
  */
 
+/* ── Contrast verification (WCAG 2.1 AA, normal text 4.5:1 minimum) ────────
+ * `--muted-brand: #6b6560` is shared across peach/cream/sage. Measured ratios:
+ *     peach  bg  5.37:1 · bg2  4.94:1
+ *     cream  bg  5.03:1 · bg2  4.52:1  ← thinnest margin; ≥ AA but watch
+ *     sage   bg  5.10:1 · bg2  4.67:1
+ *     ink    bg  6.80:1 · bg2  6.50:1 (muted-brand `#a8a29a` on dark bg)
+ * All pass AA. If a future theme tweak lowers cream bg2 margin further,
+ * darken `--muted-brand` to `#5d5853` (yields ≥ 5.5:1 everywhere). Verified
+ * 2026-05 — accessibility-reviewer flagged a borderline concern; recomputed
+ * with the WebAIM-equivalent linear-luminance formula and confirmed pass.
+ */
 :root,
 [data-theme="peach"] {
   --bg: #faf7f2;

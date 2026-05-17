@@ -173,6 +173,9 @@ export function TagFormDialog({ open, onOpenChange, defaults }: Props) {
               maxLength={80}
               autoComplete="off"
               autoFocus
+              aria-required="true"
+              aria-invalid={errors.name ? 'true' : undefined}
+              aria-describedby={errors.name ? 'name-error' : undefined}
             />
           </Field>
 
@@ -184,13 +187,18 @@ export function TagFormDialog({ open, onOpenChange, defaults }: Props) {
                 maxLength={80}
                 autoComplete="off"
                 className="font-mono"
+                aria-required="true"
+                aria-invalid={errors.slug ? 'true' : undefined}
+                aria-describedby={
+                  errors.slug ? 'slug-error slug-hint' : 'slug-hint'
+                }
               />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={autoSlug}
-                title="สร้างจากชื่อ — เก็บไทยไว้"
+                aria-label="สร้าง slug จากชื่อ (เก็บภาษาไทย)"
               >
                 Auto
               </Button>
@@ -199,12 +207,12 @@ export function TagFormDialog({ open, onOpenChange, defaults }: Props) {
                 variant="outline"
                 size="sm"
                 onClick={autoSlugAscii}
-                title="สร้างแบบอังกฤษล้วน"
+                aria-label="สร้าง slug แบบอักษรละติน"
               >
                 EN
               </Button>
             </div>
-            <p className="text-[11px] text-muted-foreground">
+            <p id="slug-hint" className="text-[11px] text-muted-foreground">
               a-z, 0-9, ไทย, dash · ใช้ใน URL /blog?tag=&lt;slug&gt; และ /works?tag=&lt;slug&gt;
             </p>
           </Field>
@@ -221,7 +229,12 @@ export function TagFormDialog({ open, onOpenChange, defaults }: Props) {
                       field.onChange(v as (typeof tagKinds)[number])
                     }
                   >
-                    <SelectTrigger id="kind" aria-label="ประเภทแท็ก">
+                    <SelectTrigger
+                      id="kind"
+                      aria-label="ประเภทแท็ก"
+                      aria-invalid={errors.kind ? 'true' : undefined}
+                      aria-describedby={errors.kind ? 'kind-error' : undefined}
+                    >
                       <SelectValue placeholder="เลือกประเภท">
                         {(v) =>
                           v && v in KIND_LABELS
@@ -255,6 +268,8 @@ export function TagFormDialog({ open, onOpenChange, defaults }: Props) {
                       ? 0
                       : Number(v),
                 })}
+                aria-invalid={errors.sort ? 'true' : undefined}
+                aria-describedby={errors.sort ? 'sort-error' : undefined}
               />
             </Field>
           </div>

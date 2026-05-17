@@ -54,6 +54,12 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
             >
               บทความ
             </Link>
+            <Link
+              href="/contact"
+              className="text-sm text-muted-brand hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 rounded-sm"
+            >
+              ติดต่อ
+            </Link>
             <ThemeToggle />
           </nav>
         </div>

@@ -3,6 +3,7 @@ import { and, asc, eq, like, or, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { bumpTags } from '@/lib/cache-tags';
+import { isDuplicateKeyError } from '@/lib/db/errors';
 import { postTags } from '@/lib/db/schema/posts';
 import {
   tags as tagsTable,
@@ -105,13 +106,24 @@ async function assertTagSlugAvailable(slug: string, excludeId?: number) {
 export async function createTag(input: TagInsert): Promise<number> {
   await assertTagSlugAvailable(input.slug);
 
-  const result = await db.insert(tagsTable).values({
-    slug: input.slug,
-    name: input.name,
-    kind: input.kind,
-    sort: input.sort,
-  });
-  const insertId = (result as unknown as { insertId?: number }[])[0]?.insertId;
+  // The pre-check + insert is not atomic — two concurrent admins POSTing the
+  // same slug both pass the SELECT, then both reach this INSERT. The DB
+  // UNIQUE index is the real guarantee; convert its 1062 error back into the
+  // domain-specific `TagSlugTakenError` so the action layer still returns a
+  // useful `fieldErrors.slug` to the form. Same pattern in `updateTag`.
+  let insertId: number | undefined;
+  try {
+    const result = await db.insert(tagsTable).values({
+      slug: input.slug,
+      name: input.name,
+      kind: input.kind,
+      sort: input.sort,
+    });
+    insertId = (result as unknown as { insertId?: number }[])[0]?.insertId;
+  } catch (err) {
+    if (isDuplicateKeyError(err)) throw new TagSlugTakenError();
+    throw err;
+  }
   if (!insertId) throw new Error('Failed to insert tag');
 
   bumpTags();
@@ -136,7 +148,12 @@ export async function updateTag(input: TagUpdate): Promise<void> {
 
   if (Object.keys(set).length === 0) return;
 
-  await db.update(tagsTable).set(set).where(eq(tagsTable.id, input.id));
+  try {
+    await db.update(tagsTable).set(set).where(eq(tagsTable.id, input.id));
+  } catch (err) {
+    if (isDuplicateKeyError(err)) throw new TagSlugTakenError();
+    throw err;
+  }
   bumpTags();
 }
 

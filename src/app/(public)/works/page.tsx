@@ -11,14 +11,18 @@ import { roomTypeValues, type RoomType } from '@/lib/db/schema/works';
 import { env } from '@/env';
 
 /**
- * Force per-request rendering. /works accepts `?room=`, `?style=`, `?tag=`,
- * `?page=` searchParams that filter the listing. With `revalidate = N` Next 16
- * would key the router cache by pathname only, causing soft navigation between
- * filter combinations to serve a stale RSC payload (the active chip updates
- * but the grid stays on the previous filter's items). Detail route
- * (`/works/[slug]`) keeps revalidate because its cache key is the slug.
+ * ISR with 60s revalidation. Underlying DB queries (`listPublishedWorks`,
+ * `listDistinctWorkStyles`) are wrapped in `unstable_cache` keyed on input
+ * args and tagged with `'works'` — admin mutations bust the tag via
+ * `bumpWorkById()`, so filter combinations stay fresh without `force-dynamic`.
+ *
+ * Filter swap correctness (the bug that previously forced `force-dynamic`):
+ * `/works` does not use `<Link prefetch>` for filter chips — `WorksFilterBar`
+ * uses a `<Select>` + `router.push()` flow, so Next's pathname-keyed router
+ * cache cannot cross-contaminate filter variants. The blog equivalent uses
+ * `<Link prefetch={false}>` on its chips for the same reason.
  */
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 // ── SEO ──────────────────────────────────────────────────────────────────────
 

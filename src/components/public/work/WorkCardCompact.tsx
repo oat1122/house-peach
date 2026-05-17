@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { ImageOff } from 'lucide-react';
 
 import { resolveRoomTypeLabel } from '@/lib/utils/workLabels';
 import type { RoomType } from '@/lib/db/schema/works';
@@ -7,7 +8,9 @@ import type { RoomType } from '@/lib/db/schema/works';
 type Props = {
   slug: string;
   title: string;
-  coverPath: string;
+  /** null/empty → render a placeholder block instead of <Image>. Required
+   *  because next/image throws on empty-string src — we'd rather not call it. */
+  coverPath: string | null;
   roomType: RoomType;
   style: string | null;
   yearCompleted: number | null;
@@ -47,15 +50,24 @@ export function WorkCardCompact({
       href={`/works/${slug}`}
       className="flex items-start gap-3 group rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
     >
-      <Image
-        src={coverPath}
-        alt={coverAlt}
-        width={64}
-        height={64}
-        sizes="80px"
-        className="w-16 h-16 object-cover rounded-sm flex-none"
-        unoptimized
-      />
+      {coverPath ? (
+        <Image
+          src={coverPath}
+          alt={coverAlt}
+          width={64}
+          height={64}
+          sizes="80px"
+          className="w-16 h-16 object-cover rounded-sm flex-none"
+          unoptimized
+        />
+      ) : (
+        <div
+          aria-hidden="true"
+          className="grid h-16 w-16 flex-none place-items-center rounded-sm bg-bg2 text-muted-brand"
+        >
+          <ImageOff size={20} />
+        </div>
+      )}
       <div className="min-w-0">
         <p className="text-sm font-medium text-ink line-clamp-2 group-hover:text-brand-accent transition-colors break-words">
           {title}
