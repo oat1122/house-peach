@@ -1,0 +1,2 @@
+ALTER TABLE `works` ADD `home_section` enum('none','discover','recent') DEFAULT 'none' NOT NULL;--> statement-breakpoint
+CREATE INDEX `works_home_section_idx` ON `works` (`home_section`,`status`,`published_at`);

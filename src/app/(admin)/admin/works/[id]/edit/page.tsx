@@ -65,6 +65,7 @@ export default async function EditWorkPage(props: {
     // Cast: WorkRow.materials uses plain string for colorHex, but WorkInsert
     // uses the HexColor brand. Same pattern as tone/accent above.
     materials: (work.materials ?? null) as WorkInsert['materials'],
+    homeSection: work.homeSection,
   };
 
   const galleryRows: GalleryRow[] = galleryRowsRaw.map((r) => ({

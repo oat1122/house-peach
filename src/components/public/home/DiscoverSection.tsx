@@ -2,7 +2,8 @@ import Link from 'next/link';
 
 import { FadeUp } from '@/components/motion/FadeUp';
 import { Stagger, StaggerItem } from '@/components/motion/Stagger';
-import { WorkCard, type WorkCardWork } from '@/components/public/work/WorkCard';
+import { FeaturedWorkCard } from '@/components/public/home/FeaturedWorkCard';
+import type { WorkCardWork } from '@/components/public/work/WorkCard';
 import { labels } from '@/lib/i18n/labels';
 
 type Props = {
@@ -24,9 +25,7 @@ export function DiscoverSection({ featuredWork, smallWorks }: Props) {
       {/* Section heading row */}
       <FadeUp>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-10">
-          {/* Left: eyebrow + h2 */}
           <div>
-            {/* P1 — lang attributes for bilingual eyebrow */}
             <p className="text-xs uppercase tracking-widest text-muted-brand">
               <span lang="th">{labels.homeDiscoverEyebrow.th}</span>
               <span aria-hidden="true"> · </span>
@@ -39,8 +38,6 @@ export function DiscoverSection({ featuredWork, smallWorks }: Props) {
               {labels.homeDiscoverH2.th}
             </h2>
           </div>
-
-          {/* Right: body paragraph */}
           <div>
             <p className="text-sm md:text-base text-muted-brand leading-relaxed">
               {labels.homeDiscoverBody.th}
@@ -49,45 +46,35 @@ export function DiscoverSection({ featuredWork, smallWorks }: Props) {
         </div>
       </FadeUp>
 
-      {/* Gallery grid
-          Mobile:  featured full-width, then small-1 + small-2 side-by-side, then small-wide full-width
-          Desktop: 2-col layout — left = featured, right = sub-grid (small-1, small-2, small-wide col-span-2)
+      {/*
+        Housify-faithful grid:
+        - mobile:  1 col (cards stack)
+        - sm:      2 col (small-wide spans 2)
+        - lg:      [1.4fr 1fr 1fr] columns × [220px 220px] rows
+                   featured fills col-1 across both rows; small-1/small-2 top-right; small-wide bottom-right spanning 2 cols
       */}
-      <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-        {/* Featured — spans full left column on desktop (via row-span in sub-grid below) */}
-        <StaggerItem>
-          {/* P5 — remove priority; only hero image above fold warrants it */}
-          <WorkCard work={featuredWork} variant="regular" />
+      <Stagger className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-[1.4fr_1fr_1fr] lg:grid-rows-[220px_220px]">
+        <StaggerItem className="lg:row-span-2 lg:col-start-1 sm:col-span-2 lg:col-span-1">
+          <FeaturedWorkCard work={featuredWork} />
         </StaggerItem>
-
-        {/* Right column on desktop: nested 2-col sub-grid for 3 small cards */}
-        <StaggerItem>
-          {/* Mobile: small-1 + small-2 side by side */}
-          <div className="grid grid-cols-2 gap-3 md:gap-4 md:hidden">
-            {small1 && <WorkCard work={small1} variant="regular" />}
-            {small2 && <WorkCard work={small2} variant="regular" />}
-          </div>
-          {/* Mobile: small-wide full-width */}
-          {smallWide && (
-            <div className="mt-3 md:hidden">
-              <WorkCard work={smallWide} variant="regular" />
-            </div>
-          )}
-
-          {/* Desktop: 2-col sub-grid */}
-          <div className="hidden md:grid md:grid-cols-2 gap-4">
-            {small1 && <WorkCard work={small1} variant="regular" />}
-            {small2 && <WorkCard work={small2} variant="regular" />}
-            {smallWide && (
-              <div className="col-span-2">
-                <WorkCard work={smallWide} variant="regular" />
-              </div>
-            )}
-          </div>
-        </StaggerItem>
+        {small1 && (
+          <StaggerItem className="lg:col-start-2 lg:row-start-1">
+            <FeaturedWorkCard work={small1} />
+          </StaggerItem>
+        )}
+        {small2 && (
+          <StaggerItem className="lg:col-start-3 lg:row-start-1">
+            <FeaturedWorkCard work={small2} />
+          </StaggerItem>
+        )}
+        {smallWide && (
+          <StaggerItem className="sm:col-span-2 lg:col-start-2 lg:col-span-2 lg:row-start-2">
+            <FeaturedWorkCard work={smallWide} />
+          </StaggerItem>
+        )}
       </Stagger>
 
-      {/* See all link — M3: text-ink for 4.5:1 contrast; P2: min-h-[44px] for touch target */}
+      {/* See all link — text-ink (4.5:1) + min-h-[44px] tap target */}
       <div className="mt-6 text-right">
         <Link
           href="/works"

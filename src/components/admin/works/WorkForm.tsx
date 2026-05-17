@@ -46,8 +46,10 @@ import { slugify, slugifyAscii } from '@/lib/utils/slug';
 import {
   WorkInsert,
   budgetRanges,
+  homeSections,
   roomTypes,
   type BudgetRange,
+  type HomeSection,
   type RoomType,
 } from '@/lib/validation/work';
 import { contentStatuses, type ContentStatus } from '@/lib/validation/post';
@@ -85,6 +87,11 @@ const STATUS_LABELS: Record<ContentStatus, string> = {
   draft: 'ฉบับร่าง (draft)',
   published: 'เผยแพร่ (published)',
   archived: 'เก็บถาวร (archived)',
+};
+
+const HOME_SECTION_LABELS: Record<HomeSection, string> = {
+  none: 'ไม่โชว์',
+  discover: 'ค้นพบงานออกแบบที่ใช่สำหรับคุณ',
 };
 
 export function WorkForm({
@@ -126,6 +133,7 @@ export function WorkForm({
     tagIds: defaultValues?.tagIds ?? [],
     status: defaultValues?.status ?? 'draft',
     publishedAt: defaultValues?.publishedAt ?? null,
+    homeSection: defaultValues?.homeSection ?? 'none',
     // v2.2 editorial fields — treat DB null as empty for the form
     durationDays: defaultValues?.durationDays ?? null,
     clientQuote: defaultValues?.clientQuote ?? null,
@@ -618,6 +626,44 @@ export function WorkForm({
                 </Select>
               )}
             />
+          </Field>
+
+          <Field
+            id="homeSection"
+            label="โชว์บนหน้า Home"
+            error={errors.homeSection?.message}
+          >
+            <Controller
+              control={control}
+              name="homeSection"
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v as HomeSection)}
+                >
+                  <SelectTrigger id="homeSection" aria-label="โชว์บนหน้า Home">
+                    <SelectValue placeholder="ไม่โชว์">
+                      {(v) =>
+                        v && v in HOME_SECTION_LABELS
+                          ? HOME_SECTION_LABELS[v as HomeSection]
+                          : 'ไม่โชว์'
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {homeSections.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {HOME_SECTION_LABELS[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              เลือกว่าผลงานชิ้นนี้จะโชว์ใน section &quot;ค้นพบงานออกแบบ&quot; บนหน้า Home หรือไม่ (โชว์สูงสุด 4 ใน grid ใหญ่).
+              ต้องเป็นสถานะ &quot;เผยแพร่&quot; ด้วยจึงจะปรากฏ. Section &quot;งานล่าสุดของเรา&quot; จะ auto จากวันที่เผยแพร่ — ไม่ต้องเลือก
+            </p>
           </Field>
         </Section>
         </div>

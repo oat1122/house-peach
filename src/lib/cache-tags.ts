@@ -29,6 +29,9 @@ export function bumpTag(tag: string) {
 export function bumpWorkPaths() {
   revalidatePath('/works/[slug]', 'page');
   revalidatePath('/works');
+  // Home page reads listHomeFeed() — bust here so admin edits to home_section
+  // / publish status take effect immediately instead of waiting 60s.
+  revalidatePath('/');
   revalidatePath('/sitemap.xml');
   revalidatePath('/llms.txt');
   revalidatePath('/llms-full.txt');

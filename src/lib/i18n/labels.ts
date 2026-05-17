@@ -165,6 +165,12 @@ export const labels = {
   homeRecentEyebrow: { en: 'Recent works', th: 'ผลงานล่าสุด' },
   homeRecentH2: { en: 'Our latest work', th: 'งานล่าสุดของเรา' },
   homeRecentSeeAll: { en: 'See all works →', th: 'ดูผลงานทั้งหมด →' },
+  // ── Home showcase room-type filter chips ───────────────────────────────
+  homeRoomChipAll: { en: 'All', th: 'ทั้งหมด' },
+  homeRoomChipLiving: { en: 'Living room', th: 'ห้องนั่งเล่น' },
+  homeRoomChipBedroom: { en: 'Bedroom', th: 'ห้องนอน' },
+  homeRoomChipKitchen: { en: 'Kitchen', th: 'ครัว' },
+  homeRoomChipHouse: { en: 'Full house', th: 'ทั้งบ้าน' },
 } as const satisfies Labels;
 
 export type LabelKey = keyof typeof labels;

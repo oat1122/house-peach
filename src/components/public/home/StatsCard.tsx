@@ -14,7 +14,7 @@ type Props = {
 export function StatsCard({ stats }: Props) {
   return (
     <FadeUp delay={0.15}>
-      <div className="bg-brand-card rounded-xl p-5 border border-line shadow-sm">
+      <div className="bg-brand-card/96 backdrop-blur-md rounded-xl p-5 border border-line shadow-sm">
         {/* Header — P1: lang attributes for bilingual eyebrow */}
         <p className="text-[10px] uppercase tracking-widest text-muted-brand">
           <span lang="th">{labels.homeStatsTitle.th}</span>

@@ -166,6 +166,7 @@ export async function createWork(input: WorkInsert): Promise<number> {
         clientName: input.clientName ?? null,
         designerNote: input.designerNote ?? null,
         materials: input.materials ?? null,
+        homeSection: input.homeSection,
       });
       const insertId = (result as unknown as { insertId?: number }[])[0]
         ?.insertId;
@@ -226,6 +227,7 @@ export async function updateWork(input: WorkUpdate): Promise<void> {
       set.designerNote = input.designerNote ?? null;
     if (input.materials !== undefined)
       set.materials = input.materials ?? null;
+    if (input.homeSection !== undefined) set.homeSection = input.homeSection;
     if (input.status !== undefined) {
       set.status = input.status;
       if (input.status === 'published') {
@@ -553,4 +555,75 @@ async function listDistinctWorkStylesUncached(): Promise<string[]> {
     .where(eq(works.status, 'published'))
     .orderBy(asc(works.style));
   return rows.map((r) => r.style);
+}
+
+/**
+ * Home feed:
+ *   - `discover` → admin-curated (works.home_section = 'discover'), max 4
+ *   - `recent`   → auto by publishedAt DESC, max 12, excludes works already
+ *                  in the discover slot to avoid visual duplication
+ * Both ordered by `publishedAt DESC, createdAt DESC` (stable on same day).
+ *
+ * Two queries via Promise.all. We over-fetch recent by 4 so we can drop any
+ * overlap with discover and still hand back 12 fresh items in the common case.
+ * Shares the `works` cache tag — bumpWorkById() invalidates this alongside
+ * /works listings.
+ */
+export const listHomeFeed = unstable_cache(
+  listHomeFeedUncached,
+  ['works:home-feed'],
+  { tags: [cacheTags.works], revalidate: 60 },
+);
+
+async function listHomeFeedUncached(): Promise<{
+  discover: WorkPublicListItem[];
+  recent: WorkPublicListItem[];
+}> {
+  const selectShape = {
+    id: works.id,
+    slug: works.slug,
+    title: works.title,
+    summary: works.summary,
+    roomType: works.roomType,
+    style: works.style,
+    location: works.location,
+    yearCompleted: works.yearCompleted,
+    areaSqm: works.areaSqm,
+    budgetRange: works.budgetRange,
+    durationDays: works.durationDays,
+    coverPath: mediaAssets.path,
+    coverAlt: mediaAssets.alt,
+  };
+
+  const [discover, recentRaw] = await Promise.all([
+    db
+      .select(selectShape)
+      .from(works)
+      .leftJoin(mediaAssets, eq(mediaAssets.id, works.coverMediaAssetId))
+      .where(
+        and(
+          eq(works.status, 'published'),
+          eq(works.homeSection, 'discover'),
+        ),
+      )
+      .orderBy(desc(works.publishedAt), desc(works.createdAt))
+      .limit(4),
+    db
+      .select(selectShape)
+      .from(works)
+      .leftJoin(mediaAssets, eq(mediaAssets.id, works.coverMediaAssetId))
+      .where(eq(works.status, 'published'))
+      .orderBy(desc(works.publishedAt), desc(works.createdAt))
+      .limit(16),
+  ]);
+
+  const discoverIds = new Set(discover.map((d) => d.id));
+  const recent = recentRaw
+    .filter((r) => !discoverIds.has(r.id))
+    .slice(0, 12);
+
+  return {
+    discover: discover.map((r) => ({ ...r, areaSqm: r.areaSqm ?? null })),
+    recent: recent.map((r) => ({ ...r, areaSqm: r.areaSqm ?? null })),
+  };
 }

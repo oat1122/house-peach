@@ -27,6 +27,9 @@ export type BudgetRange = (typeof budgetRanges)[number];
 export const workImageKinds = ['before', 'after', 'process', 'detail', 'plan'] as const;
 export type WorkImageKind = (typeof workImageKinds)[number];
 
+export const homeSections = ['none', 'discover'] as const;
+export type HomeSection = (typeof homeSections)[number];
+
 export const WorkInsert = z.object({
   title: z.string().min(4, 'หัวข้อต้องยาวอย่างน้อย 4 ตัวอักษร').max(180),
   slug: Slug,
@@ -63,6 +66,7 @@ export const WorkInsert = z.object({
     .max(8)
     .nullable()
     .optional(),
+  homeSection: z.enum(homeSections).default('none'),
 });
 export type WorkInsert = z.infer<typeof WorkInsert>;
 

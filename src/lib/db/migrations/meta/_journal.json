@@ -22,6 +22,20 @@
       "when": 1778567888467,
       "tag": "0002_sudden_grey_gargoyle",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1779023075180,
+      "tag": "0003_keen_starhawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1779023667376,
+      "tag": "0004_hard_squadron_supreme",
+      "breakpoints": true
     }
   ]
 }

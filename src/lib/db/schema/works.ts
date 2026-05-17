@@ -49,6 +49,18 @@ export const workImageKindValues = [
 ] as const;
 export type WorkImageKind = (typeof workImageKindValues)[number];
 
+/**
+ * Controls whether a published work appears on the home "Discover" section.
+ * Admin sets this per-work via the work edit form.
+ *   - none     = hidden from the curated Discover grid
+ *   - discover = "ค้นพบงานออกแบบที่ใช่สำหรับคุณ" — top 4 by publishedAt anchor the magazine grid
+ *
+ * The "งานล่าสุดของเรา" strip is purely chronological (latest 12 published)
+ * — no admin opt-in needed; that's why there's no `'recent'` enum value.
+ */
+export const homeSectionValues = ['none', 'discover'] as const;
+export type HomeSection = (typeof homeSectionValues)[number];
+
 export const works = mysqlTable(
   'works',
   {
@@ -76,6 +88,9 @@ export const works = mysqlTable(
     designerNote: mediumtext('designer_note'),
     // JSON shape: Array<{ name: string; colorHex: string }>. Max 8 items enforced at zod layer.
     materials: json('materials').$type<Array<{ name: string; colorHex: string }>>(),
+    homeSection: mysqlEnum('home_section', homeSectionValues)
+      .notNull()
+      .default('none'),
     publishedAt: timestamp('published_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow(),
@@ -85,6 +100,8 @@ export const works = mysqlTable(
     index('works_status_published_idx').on(t.status, t.publishedAt),
     index('works_room_style_idx').on(t.roomType, t.style),
     index('works_cover_idx').on(t.coverMediaAssetId),
+    // Composite index for home feed: filter by section + status, order by publishedAt
+    index('works_home_section_idx').on(t.homeSection, t.status, t.publishedAt),
   ],
 );
 

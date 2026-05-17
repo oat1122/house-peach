@@ -1,12 +1,15 @@
 import Link from 'next/link';
 
 import { FadeUp } from '@/components/motion/FadeUp';
-import { Stagger, StaggerItem } from '@/components/motion/Stagger';
-import { WorkCard, type WorkCardWork } from '@/components/public/work/WorkCard';
+import { RecentWorksClient } from '@/components/public/home/RecentWorksClient';
+import type { WorkCardWork } from '@/components/public/work/WorkCard';
 import { labels } from '@/lib/i18n/labels';
 
 type Props = {
-  /** Exactly 4 work cards for the strip. */
+  /**
+   * Pool of recent works to feed the client-side filter.
+   * The client child shows up to 4 matching the active chip.
+   */
   works: WorkCardWork[];
 };
 
@@ -18,10 +21,9 @@ export function RecentWorksStrip({ works }: Props) {
       aria-labelledby="recent-works-heading"
       className="max-w-6xl mx-auto px-4 md:px-6 py-12 md:py-16"
     >
-      {/* Heading row */}
+      {/* Centered heading */}
       <FadeUp>
-        <div className="mb-8">
-          {/* P1 — lang attributes for bilingual eyebrow */}
+        <div className="mb-6 text-center">
           <p className="text-xs uppercase tracking-widest text-muted-brand">
             <span lang="th">{labels.homeRecentEyebrow.th}</span>
             <span aria-hidden="true"> · </span>
@@ -36,18 +38,20 @@ export function RecentWorksStrip({ works }: Props) {
         </div>
       </FadeUp>
 
-      {/* TODO(phase-2): swap to Embla carousel */}
-      <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-        {/* P4 — no priority; all 4 cards are below the fold */}
-        {works.map((work) => (
-          <StaggerItem key={work.slug}>
-            <WorkCard work={work} variant="regular" />
-          </StaggerItem>
-        ))}
-      </Stagger>
+      {/* Chips + filtered grid live in the client child */}
+      <RecentWorksClient pool={works} />
 
-      {/* See all link — M3: text-ink for 4.5:1 contrast; P2: min-h-[44px] for touch target */}
-      <div className="mt-6 text-right">
+      {/* Pagination dots — visual placeholder for future carousel */}
+      <div className="flex justify-center gap-1.5 mt-7" aria-hidden="true">
+        <span className="w-4 h-1.5 rounded-full bg-ink" />
+        <span className="w-1.5 h-1.5 rounded-full bg-line" />
+        <span className="w-1.5 h-1.5 rounded-full bg-line" />
+        <span className="w-1.5 h-1.5 rounded-full bg-line" />
+        <span className="w-1.5 h-1.5 rounded-full bg-line" />
+      </div>
+
+      {/* See all link */}
+      <div className="mt-6 text-center">
         <Link
           href="/works"
           className="inline-flex items-center min-h-[44px] gap-1 text-sm text-ink hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 rounded-sm"
