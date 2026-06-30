@@ -47,6 +47,7 @@ function ContactJsonLd() {
         name: 'ติดต่อ — house-peach',
         description: META_DESCRIPTION,
         url: `${origin}/contact`,
+        publisher: { '@id': `${origin}/#organization` },
         breadcrumb: {
           '@type': 'BreadcrumbList',
           itemListElement: [
@@ -63,18 +64,6 @@ function ContactJsonLd() {
               item: `${origin}/contact`,
             },
           ],
-        },
-      },
-      {
-        '@type': 'Organization',
-        '@id': `${origin}/#organization`,
-        name: 'house-peach',
-        url: origin,
-        logo: `${origin}/og/logo.png`,
-        contactPoint: {
-          '@type': 'ContactPoint',
-          contactType: 'customer service',
-          availableLanguage: ['Thai', 'English'],
         },
       },
     ],

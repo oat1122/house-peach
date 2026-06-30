@@ -16,14 +16,13 @@ type Props = {
  * RSC — no `'use client'` needed.
  */
 export function ShowcaseCard({ work }: Props) {
-  const { slug, title, roomType, style, yearCompleted, areaSqm, coverPath, coverAlt } = work;
+  const { slug, title, roomType, style, yearCompleted, areaSqm, location, coverPath, coverAlt } = work;
 
   const resolvedAlt =
     coverAlt ||
     `${title} — ${resolveRoomTypeLabel(roomType)}${style ? `, สไตล์ ${style}` : ''}`;
 
   const areaSqmNum = areaSqm != null ? parseFloat(String(areaSqm)) : null;
-  const roomLabel = resolveRoomTypeLabel(roomType);
 
   return (
     <article className="relative rounded-xl overflow-hidden h-[280px] group block">
@@ -48,9 +47,16 @@ export function ShowcaseCard({ work }: Props) {
         {/* Label overlay */}
         <div className="absolute bottom-2 left-2 right-2 bg-brand-card/95 backdrop-blur-md rounded-lg p-3">
           {/* Title */}
-          <h4 className="text-sm font-bold text-ink text-center mb-1.5 line-clamp-1">
+          <h4 className="text-sm font-bold text-ink text-center mb-0.5 line-clamp-1">
             {title}
           </h4>
+
+          {/* Location (small metadata under the title, hidden if null) */}
+          {location ? (
+            <p className="text-[10px] text-muted-brand text-center mb-1.5 line-clamp-1">
+              {location}
+            </p>
+          ) : null}
 
           {/* 3-cell spec strip */}
           <div className="flex gap-1.5">
@@ -62,10 +68,10 @@ export function ShowcaseCard({ work }: Props) {
               ตร.ม.
             </div>
 
-            {/* Room type */}
+            {/* Style */}
             <div className="flex-1 bg-bg2 rounded-md py-1.5 px-1 text-center text-[10px] leading-tight text-muted-brand">
-              <b className="block text-ink text-xs truncate">{roomLabel}</b>
-              ห้อง
+              <b className="block text-ink text-xs truncate">{style || '—'}</b>
+              สไตล์
             </div>
 
             {/* Year */}

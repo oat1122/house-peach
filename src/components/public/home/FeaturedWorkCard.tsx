@@ -35,20 +35,20 @@ export function FeaturedWorkCard({ work }: Props) {
     .join(' · ');
 
   return (
-    <article className="relative rounded-xl overflow-hidden h-full min-h-[220px] group">
+    <article className="relative rounded-xl overflow-hidden h-full min-h-[220px] group border border-line/30 hover:border-brand-accent/50 hover:shadow-lg transition-all duration-300">
       <Link
         href={`/works/${encodeURIComponent(slug)}`}
         className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg rounded-xl"
       >
         {/* Cover image — fills entire card area */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 overflow-hidden">
           {coverPath ? (
             <Image
               src={coverPath}
               alt={resolvedAlt}
               fill
               sizes="(max-width: 1024px) calc(100vw - 32px), 560px"
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
               unoptimized
             />
           ) : (
@@ -57,14 +57,14 @@ export function FeaturedWorkCard({ work }: Props) {
         </div>
 
         {/* Info overlay — absolute bottom, Housify-style */}
-        <div className="absolute bottom-3 left-3 right-3 bg-ink/80 backdrop-blur-md rounded-xl p-3 text-bg grid grid-cols-[1fr_auto] gap-3 items-center">
+        <div className="absolute bottom-3 left-3 right-3 bg-ink/85 backdrop-blur-md rounded-xl p-3.5 text-bg grid grid-cols-[1fr_auto] gap-3 items-center border border-white/10 shadow-md group-hover:bg-ink/90 transition-all duration-300">
           {/* Left: title + meta */}
           <div className="min-w-0">
-            <h3 className="text-base font-bold leading-tight truncate">
+            <h3 className="text-sm md:text-base font-bold leading-tight truncate group-hover:text-brand-accent transition-colors duration-200">
               {title}
             </h3>
             {metaLine && (
-              <p className="text-[11px] opacity-85 leading-tight mt-1 truncate">
+              <p className="text-[10px] md:text-[11px] opacity-80 leading-tight mt-1 truncate">
                 {metaLine}
               </p>
             )}
@@ -73,9 +73,9 @@ export function FeaturedWorkCard({ work }: Props) {
           {/* Right: accent arrow button */}
           <div
             aria-hidden="true"
-            className="w-9 h-9 rounded-full bg-brand-accent flex items-center justify-center text-bg flex-shrink-0"
+            className="w-9 h-9 rounded-full bg-brand-accent flex items-center justify-center text-bg flex-shrink-0 shadow-sm group-hover:bg-white group-hover:text-ink transition-all duration-300"
           >
-            <ArrowUpRight size={16} />
+            <ArrowUpRight size={16} className="group-hover:rotate-45 transition-transform duration-300" />
           </div>
         </div>
       </Link>

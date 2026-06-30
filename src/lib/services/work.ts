@@ -11,6 +11,7 @@ import { tags as tagsTable } from '@/lib/db/schema/tags';
 import {
   works,
   workTags,
+  roomTypeValues,
   type BudgetRange,
   type RoomType,
   type WorkRow,
@@ -626,4 +627,36 @@ async function listHomeFeedUncached(): Promise<{
     discover: discover.map((r) => ({ ...r, areaSqm: r.areaSqm ?? null })),
     recent: recent.map((r) => ({ ...r, areaSqm: r.areaSqm ?? null })),
   };
+}
+
+/**
+ * Cached room type counts of all published works.
+ * Groups by works.roomType, fills missing roomType keys with 0.
+ */
+export const getPublishedWorkCountsByRoomType = unstable_cache(
+  getPublishedWorkCountsByRoomTypeUncached,
+  ['works:roomCounts'],
+  { tags: [cacheTags.works], revalidate: 60 },
+);
+
+async function getPublishedWorkCountsByRoomTypeUncached(): Promise<Record<RoomType, number>> {
+  const rows = await db
+    .select({
+      roomType: works.roomType,
+      count: count(),
+    })
+    .from(works)
+    .where(eq(works.status, 'published'))
+    .groupBy(works.roomType);
+
+  const result = {} as Record<RoomType, number>;
+  for (const value of roomTypeValues) {
+    result[value] = 0;
+  }
+
+  for (const row of rows) {
+    result[row.roomType] = Number(row.count ?? 0);
+  }
+
+  return result;
 }

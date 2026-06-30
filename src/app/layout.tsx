@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono, DM_Serif_Display } from 'next/font/google';
 
 import { ThemeProvider } from '@/components/common/ThemeProvider';
-import { env } from '@/env';
+import { buildSiteGraphLd } from '@/lib/seo/jsonld';
 
 import './globals.css';
 
@@ -55,16 +55,7 @@ export const metadata: Metadata = {
   ),
 };
 
-// B2 — Organization JSON-LD (site-wide, rendered once in root layout)
-const orgLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'house-peach',
-  url: env.NEXT_PUBLIC_SITE_URL,
-  logo: `${env.NEXT_PUBLIC_SITE_URL}/og/logo.png`,
-  description: 'studio ตกแต่งบ้านสไตล์ warm-tone minimalist',
-  sameAs: [],
-};
+
 
 export default function RootLayout({
   children,
@@ -78,10 +69,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${dmSerifDisplay.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        {/* B2 — Organization structured data, above children per seo.md */}
+        {/* Consolidated Organization & WebSite structured data */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(buildSiteGraphLd()) }}
         />
         <ThemeProvider>{children}</ThemeProvider>
       </body>

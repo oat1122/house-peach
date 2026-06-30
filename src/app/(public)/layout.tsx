@@ -20,20 +20,15 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
       </a>
 
       {/*
-       * Sticky so the blog tag bar / works filter bar (which offset by
-       * `--header-h`) don't render a phantom gap when the user scrolls.
-       * `bg-bg/95 backdrop-blur-sm` keeps the header readable while letting a
-       * hint of the underlying content shimmer through for depth.
-       *
-       * --header-h: sticky filter / tag bars use this to offset themselves
-       * below the header. Header height = py-3 mobile (24+content ≈ 56px)
-       * → py-4 desktop (32+content ≈ 64px). 56 is the conservative floor —
-       * matches the mobile height so bars never tuck behind the desktop edge.
+       * Sticky nav. The blog tag bar / works filter bar offset themselves by
+       * `var(--header-h)` — defined globally in src/app/globals.css :root
+       * (56px mobile → 64px desktop) so it cascades to those bars (which live
+       * in <main>, a sibling of this <header>). `bg-bg/95 backdrop-blur-sm`
+       * keeps the header readable while a hint of content shimmers through.
+       * Keep this header's rendered height (py-3 → md:py-4) in sync with
+       * --header-h so the bars tuck right below it without a phantom gap.
        */}
-      <header
-        className="sticky top-0 z-20 border-b border-line bg-bg/95 backdrop-blur-sm"
-        style={{ ['--header-h' as string]: '56px' }}
-      >
+      <header className="sticky top-0 z-20 border-b border-line bg-bg/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:gap-5 md:px-6 md:py-4">
           <Link
             href="/"

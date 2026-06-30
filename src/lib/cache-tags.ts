@@ -41,6 +41,7 @@ export function bumpWorkPaths() {
 export function bumpPostPaths() {
   revalidatePath('/blog/[slug]', 'page');
   revalidatePath('/blog');
+  revalidatePath('/');
   revalidatePath('/sitemap.xml');
   revalidatePath('/llms.txt');
   revalidatePath('/llms-full.txt');

@@ -92,6 +92,19 @@
   --sidebar-accent-foreground: #1c1a17;
   --sidebar-border: #e8e2d8;
   --sidebar-ring: #b89b7a;
+
+  /* Sticky nav height (mobile). Sticky filter/tag bars on /works + /blog
+   * offset themselves by var(--header-h). Layout token — theme-independent,
+   * so it lives here once rather than per palette. Desktop override below. */
+  --header-h: 56px;
+}
+
+/* Desktop sticky nav is taller (header uses md:py-4). Keep in sync with the
+ * AppHeader height in src/app/(public)/layout.tsx. */
+@media (min-width: 768px) {
+  :root {
+    --header-h: 64px;
+  }
 }
 
 /* Warm minimal palette — dark mode.

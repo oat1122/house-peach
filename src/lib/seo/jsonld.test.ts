@@ -11,7 +11,17 @@ vi.mock('@/env', () => ({
   },
 }));
 
-const { buildBlogPostingLd, buildPostBreadcrumbLd } = await import('./jsonld');
+const mockConfig = {
+  phone: null as string | null,
+  socials: [] as string[],
+};
+
+vi.mock('@/lib/config', () => ({
+  getActivePhone: () => mockConfig.phone,
+  getActiveSocials: () => mockConfig.socials,
+}));
+
+const { buildBlogPostingLd, buildPostBreadcrumbLd, buildSiteGraphLd } = await import('./jsonld');
 
 // Minimal PostRow fixture — only the fields used by the builders.
 function makePost(overrides: Record<string, unknown> = {}) {
@@ -159,5 +169,58 @@ describe('buildPostBreadcrumbLd', () => {
     const ld = buildPostBreadcrumbLd({ title: 'บ้าน', slug: 'บ้าน-peach' });
     const leaf = (ld.itemListElement as Array<{ item: string }>)[2];
     expect(leaf.item).toContain(encodeURIComponent('บ้าน-peach'));
+  });
+});
+
+describe('buildSiteGraphLd', () => {
+  it('builds bare WebSite and Organization nodes in graph', () => {
+    mockConfig.phone = null;
+    mockConfig.socials = [];
+    const ld = buildSiteGraphLd() as {
+      '@context': string;
+      '@graph': Array<{
+        '@type': string;
+        '@id': string;
+        contactPoint?: { telephone?: string };
+        sameAs?: string[];
+        publisher?: { '@id': string };
+      }>;
+    };
+    expect(ld['@context']).toBe('https://schema.org');
+    expect(ld['@graph']).toHaveLength(2);
+
+    const [org, site] = ld['@graph'];
+    expect(org['@type']).toBe('Organization');
+    expect(org['@id']).toContain('/#organization');
+    expect(org.contactPoint?.telephone).toBeUndefined();
+    expect(org.sameAs).toBeUndefined();
+
+    expect(site['@type']).toBe('WebSite');
+    expect(site['@id']).toContain('/#website');
+    expect(site.publisher?.['@id']).toBe(org['@id']);
+  });
+
+  it('includes telephone when phone is active', () => {
+    mockConfig.phone = '+66 81 234 5678';
+    mockConfig.socials = [];
+    const ld = buildSiteGraphLd() as {
+      '@graph': Array<{
+        contactPoint?: { telephone?: string };
+      }>;
+    };
+    const [org] = ld['@graph'];
+    expect(org.contactPoint?.telephone).toBe('+66 81 234 5678');
+  });
+
+  it('includes sameAs when socials are active', () => {
+    mockConfig.phone = null;
+    mockConfig.socials = ['https://instagram.com/housepeach'];
+    const ld = buildSiteGraphLd() as {
+      '@graph': Array<{
+        sameAs?: string[];
+      }>;
+    };
+    const [org] = ld['@graph'];
+    expect(org.sameAs).toEqual(['https://instagram.com/housepeach']);
   });
 });

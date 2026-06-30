@@ -4,10 +4,11 @@ import { AboutPanel } from '@/components/public/home/AboutPanel';
 import { DiscoverSection } from '@/components/public/home/DiscoverSection';
 import { HeroSection } from '@/components/public/home/HeroSection';
 import { RecentWorksStrip } from '@/components/public/home/RecentWorksStrip';
+import { RoomTypeCategories } from '@/components/public/home/RoomTypeCategories';
 import { StatsCard } from '@/components/public/home/StatsCard';
 import { env } from '@/env';
 import { labels } from '@/lib/i18n/labels';
-import { listHomeFeed } from '@/lib/services/work';
+import { listHomeFeed, getPublishedWorkCountsByRoomType, listDistinctWorkStyles } from '@/lib/services/work';
 
 // B4 — ISR revalidate per ARCHITECTURE §8.1
 export const revalidate = 300;
@@ -48,13 +49,14 @@ const homeStats = [
 ];
 
 export default async function HomePage() {
-  // Home feed: admin opts each work into a section via the work edit form
-  // (works.home_section enum). listHomeFeed returns published works grouped:
-  //   - discover (max 4) → DiscoverSection grid: items[0] featured + [1..3] small
-  //   - recent   (max 12) → RecentWorksStrip chip-filtered 4-card pool
-  // Cached with tag 'works'; bumpWorkById() also revalidatePath('/') so admin
-  // edits propagate to home immediately, not after the 60s ISR window.
-  const { discover, recent } = await listHomeFeed();
+  // Concurrent fetches using Promise.all per plan
+  const [{ discover, recent }, roomCounts, distinctStyles] = await Promise.all([
+    listHomeFeed(),
+    getPublishedWorkCountsByRoomType(),
+    listDistinctWorkStyles(),
+  ]);
+
+  const styleChoices = distinctStyles.filter((s): s is string => s != null);
   const featuredWork = discover[0];
   const smallWorks = discover.slice(1, 4);
   const recentPool = recent;
@@ -64,9 +66,11 @@ export default async function HomePage() {
       {/* Mobile: StatsCard stacks below hero. Desktop: absolute bottom-right inside hero. */}
       <HeroSection
         imagePath="/images/home/hero.svg"
-        imageAlt="ห้องนั่งเล่นสไตล์ warm-tone minimalist แสงธรรมชาติอ่อนโยน"
+        imageAlt="ห้องนั่งเล่นสไตล์ warm-tone minimalist แสนอบอุ่น"
+        styleChoices={styleChoices}
         statsSlot={<StatsCard stats={homeStats} />}
       />
+      <RoomTypeCategories counts={roomCounts} />
       {featuredWork && (
         <DiscoverSection
           featuredWork={featuredWork}

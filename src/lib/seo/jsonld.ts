@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { env } from '@/env';
+import { getActivePhone, getActiveSocials } from '@/lib/config';
 import type { PostRow } from '@/lib/db/schema/posts';
 import type { WorkRow } from '@/lib/db/schema/works';
 import { resolveRoomTypeLabel } from '@/lib/utils/workLabels';
@@ -198,3 +199,49 @@ export function buildWorkBreadcrumbLd(work: WorkRow) {
     ],
   };
 }
+
+/**
+ * Builds a consolidated `@graph` JSON-LD schema containing the organization
+ * and website nodes. Emits only validated attributes, omitting placeholders.
+ */
+export function buildSiteGraphLd() {
+  const origin = env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+  const activePhone = getActivePhone();
+  const activeSocials = getActiveSocials();
+
+  const organization: Record<string, unknown> = {
+    '@type': 'Organization',
+    '@id': `${origin}/#organization`,
+    name: 'house-peach',
+    url: origin,
+    logo: `${origin}/og/logo.png`,
+    description: 'studio ตกแต่งบ้านสไตล์ warm-tone minimalist',
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer service',
+      availableLanguage: ['Thai', 'English'],
+    },
+  };
+
+  if (activePhone !== null) {
+    (organization.contactPoint as Record<string, unknown>).telephone = activePhone;
+  }
+  if (activeSocials.length > 0) {
+    organization.sameAs = activeSocials;
+  }
+
+  const website: Record<string, unknown> = {
+    '@type': 'WebSite',
+    '@id': `${origin}/#website`,
+    url: origin,
+    name: 'house-peach',
+    inLanguage: 'th',
+    publisher: { '@id': `${origin}/#organization` },
+  };
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [organization, website],
+  };
+}
+

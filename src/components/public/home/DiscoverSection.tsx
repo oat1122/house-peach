@@ -75,12 +75,13 @@ export function DiscoverSection({ featuredWork, smallWorks }: Props) {
       </Stagger>
 
       {/* See all link — text-ink (4.5:1) + min-h-[44px] tap target */}
-      <div className="mt-6 text-right">
+      <div className="mt-8 flex justify-end">
         <Link
           href="/works"
-          className="inline-flex items-center min-h-[44px] gap-1 text-sm text-ink hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 rounded-sm"
+          className="group/all inline-flex items-center min-h-[44px] gap-1.5 text-sm font-semibold text-brand-accent hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 rounded-md"
         >
-          {labels.homeDiscoverSeeAll.th}
+          <span>{labels.homeDiscoverSeeAll.th.replace(' →', '')}</span>
+          <span className="transition-transform duration-200 group-hover/all:translate-x-1">→</span>
         </Link>
       </div>
     </section>
