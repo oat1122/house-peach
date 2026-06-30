@@ -10,6 +10,7 @@ import { posts, postImages, postTags } from '@/lib/db/schema/posts';
 import { works, workImages, workTags } from '@/lib/db/schema/works';
 import { readingTime } from '@/lib/utils/readingTime';
 import { tiptapToText, type TiptapNode } from '@/lib/tiptap/text';
+import { adminFromEnv, upsertAdmin } from './_admin';
 
 // Minimal Tiptap (ProseMirror) doc builders so seed content stays readable.
 const para = (text: string): TiptapNode => ({
@@ -175,12 +176,17 @@ async function ensureAdmin() {
     .from(users)
     .where(eq(users.role, 'admin'))
     .limit(1);
-  if (!admin) {
+  if (admin) return admin.id;
+
+  const fromEnv = adminFromEnv();
+  if (!fromEnv) {
     throw new Error(
-      'ไม่มี admin ใน users table — รัน `npm run admin:create` ก่อน seed',
+      'ไม่มี admin ใน users table — ตั้ง ADMIN_EMAIL/ADMIN_PASSWORD ใน .env หรือรัน `npm run admin:create` ก่อน seed',
     );
   }
-  return admin.id;
+  const { id, created } = await upsertAdmin(fromEnv);
+  console.log(`${created ? 'created' : 'updated'} admin <${fromEnv.email}> id=${id}`);
+  return id;
 }
 
 async function upsertTags() {
