@@ -27,7 +27,12 @@
   --ink: #1c1a17;
   --muted-brand: #6b6560;
   --line: #e8e2d8;
-  --brand-accent: #b89b7a;
+  /* Terracotta accent (House-Peach Home.dc.html). Used as decorative/large-text
+   * + filled-CTA bg with `text-bg` (near-white) label. As small `text-brand-accent`
+   * text on `--bg` it measures ~3.3:1 (large-text/UI AA, below normal-text 4.5:1) —
+   * matches the approved design language and improves on the prior taupe (~2.4:1).
+   * Tighten via a darker per-theme token if an a11y pass requires strict 4.5:1. */
+  --brand-accent: #c8743a;
   /* Semantic status — warm-tuned. Used for content-status dot/badge
    * (draft=warning, published=success, archived=muted, danger=delete).
    * Light presets share one trio; ink (dark) gets lighter values below.

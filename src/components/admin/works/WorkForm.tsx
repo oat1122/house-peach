@@ -32,13 +32,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  EditActionBar,
+  EditCard,
+  EditGrid,
+  FormField,
+  SlugField,
+  STATUS_DOT,
+  StatusRadioGroup,
+  ToggleSwitch,
+} from '@/components/admin/EditFormChrome';
 import { useConfirm } from '@/components/common/ConfirmProvider';
 import {
   createWorkAction,
   deleteWorkAction,
-  setWorkStatusAction,
   updateWorkAction,
 } from '@/lib/actions/work';
 import { toast } from '@/lib/toast';
@@ -46,7 +54,6 @@ import { slugify, slugifyAscii } from '@/lib/utils/slug';
 import {
   WorkInsert,
   budgetRanges,
-  homeSections,
   roomTypes,
   type BudgetRange,
   type HomeSection,
@@ -91,10 +98,11 @@ const STATUS_LABELS: Record<ContentStatus, string> = {
   archived: 'เก็บถาวร (archived)',
 };
 
-const HOME_SECTION_LABELS: Record<HomeSection, string> = {
-  none: 'ไม่โชว์',
-  discover: 'ค้นพบงานออกแบบที่ใช่สำหรับคุณ',
-};
+const STATUS_OPTIONS = contentStatuses.map((s) => ({
+  value: s,
+  label: STATUS_LABELS[s],
+  dot: STATUS_DOT[s],
+}));
 
 export function WorkForm({
   mode,
@@ -105,10 +113,8 @@ export function WorkForm({
 }: {
   mode: 'new' | 'edit';
   defaultValues?: DefaultValues;
-  /** Optional column rendered alongside the form fields on desktop. When
-   *  provided, the form switches from single-column (max-w-3xl) to a 2-col
-   *  grid (max-w-7xl), with this slot pinned `sticky` on lg+ so the gallery
-   *  stays visible while the admin scrolls form sections. */
+  /** Gallery editor (edit mode only). Rendered as a full-width card in the
+   *  main column — it is too rich for the 312px meta sidebar. */
   slotRight?: React.ReactNode;
   tagOptions: TagOption[];
   categoryOptions: { id: number; name: string }[];
@@ -116,7 +122,6 @@ export function WorkForm({
   const router = useRouter();
   const confirm = useConfirm();
   const [saving, startSaving] = useTransition();
-  const [publishing, startPublishing] = useTransition();
   const [deleting, startDeleting] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -153,9 +158,8 @@ export function WorkForm({
     setValue,
     setError,
     watch,
-    getValues,
     control,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<WorkInsert>({
     resolver: zodResolver(WorkInsert) as unknown as Resolver<WorkInsert>,
     defaultValues: initial,
@@ -166,6 +170,8 @@ export function WorkForm({
   const titleValue = watch('title');
   const toneValue = watch('tone');
   const accentValue = watch('accent');
+  const status = watch('status');
+  const homeSection = watch('homeSection');
 
   const submit: SubmitHandler<WorkInsert> = (data) => {
     setServerError(null);
@@ -200,24 +206,6 @@ export function WorkForm({
       } else {
         router.refresh();
       }
-    });
-  };
-
-  const handlePublishToggle = () => {
-    if (mode !== 'edit' || !defaultValues?.id) return;
-    const current = getValues('status');
-    const next: ContentStatus =
-      current === 'published' ? 'draft' : 'published';
-    setServerError(null);
-    startPublishing(async () => {
-      const result = await setWorkStatusAction({ id: defaultValues.id, status: next });
-      if (!result.ok) {
-        toast.error(result.error);
-        return;
-      }
-      setValue('status', next, { shouldDirty: false });
-      toast.success(next === 'published' ? 'เผยแพร่แล้ว' : 'เก็บกลับเป็น draft');
-      router.refresh();
     });
   };
 
@@ -262,586 +250,457 @@ export function WorkForm({
     });
   };
 
-  const status = watch('status');
-  const isPublished = status === 'published';
-  const pendingAny = saving || publishing || deleting;
+  const pendingAny = saving || deleting;
 
   return (
-    <form onSubmit={handleSubmit(submit)} noValidate className="pb-24">
-      <div
-        className={
-          'mx-auto w-full px-4 py-6 lg:px-6 lg:py-8 ' +
-          (slotRight
-            ? 'max-w-7xl grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start lg:gap-8'
-            : 'max-w-3xl')
-        }
-      >
-        <div className="min-w-0 space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-semibold text-foreground">
-            {mode === 'new' ? 'สร้างผลงานใหม่' : 'แก้ไขผลงาน'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            กรอกข้อมูลผลงาน · gallery composition อยู่ในแท็บถัดไป (Phase B)
-          </p>
-        </header>
+    <form onSubmit={handleSubmit(submit)} noValidate className="pb-16">
+      <EditActionBar
+        heading={mode === 'new' ? 'สร้างผลงานใหม่' : 'แก้ไขผลงาน'}
+        onCancel={() => router.push('/admin/works')}
+        onDelete={mode === 'edit' ? handleDelete : undefined}
+        deleting={deleting}
+        saving={saving}
+        pending={pendingAny}
+        saveLabel={mode === 'new' ? 'สร้าง' : 'บันทึก'}
+      />
 
-        {serverError && (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {serverError}
-          </p>
-        )}
+      <EditGrid
+        main={
+          <>
+            {serverError && (
+              <p
+                role="alert"
+                className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {serverError}
+              </p>
+            )}
 
-        <Section title="หัวข้อ & URL">
-          <Field id="title" label="หัวข้อ" error={errors.title?.message} required>
-            <Input
-              id="title"
-              {...register('title')}
-              onBlur={(e) => {
-                register('title').onBlur(e);
-                if (!initial.slug || mode === 'new') autoSlug();
-              }}
-              maxLength={180}
-              autoComplete="off"
-            />
-          </Field>
+            <EditCard>
+              <FormField
+                id="title"
+                label="หัวข้อ"
+                error={errors.title?.message}
+                required
+              >
+                <Input
+                  id="title"
+                  {...register('title')}
+                  onBlur={(e) => {
+                    register('title').onBlur(e);
+                    if (!initial.slug || mode === 'new') autoSlug();
+                  }}
+                  maxLength={180}
+                  autoComplete="off"
+                  className="text-base font-semibold"
+                />
+              </FormField>
 
-          <Field id="slug" label="Slug (URL)" error={errors.slug?.message} required>
-            <div className="flex gap-2">
-              <Input
-                id="slug"
-                {...register('slug')}
-                maxLength={140}
-                autoComplete="off"
-                className="font-mono"
+              <SlugField
+                prefix="/works/"
+                registerProps={register('slug')}
+                onAuto={autoSlug}
+                onAutoAscii={autoSlugAscii}
+                error={errors.slug?.message}
               />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={autoSlug}
-                aria-label="สร้าง slug จากหัวข้อ (เก็บภาษาไทย)"
-              >
-                Auto
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={autoSlugAscii}
-                aria-label="สร้าง slug แบบอักษรละติน (แชร์บน social ได้สวยกว่า)"
-              >
-                EN
-              </Button>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              a-z, 0-9, ไทย, dash · ใช้ใน URL /works/&lt;slug&gt; · slug ภาษาอังกฤษล้วน
-              จะเป็น URL ที่อ่านง่ายและแชร์ได้สวยกว่า (ไม่มี %E0%B8%…)
-            </p>
-          </Field>
-        </Section>
 
-        <Section title="เนื้อหา">
-          <Field
-            id="summary"
-            label="สรุปสั้น (สำหรับ card + meta description)"
-            error={errors.summary?.message}
-            required
-          >
-            <Textarea
-              id="summary"
-              {...register('summary')}
-              maxLength={280}
-              rows={3}
-            />
-          </Field>
+              <FormField
+                id="summary"
+                label="สรุปสั้น (สำหรับ card + meta description)"
+                error={errors.summary?.message}
+                required
+              >
+                <Textarea
+                  id="summary"
+                  {...register('summary')}
+                  maxLength={280}
+                  rows={3}
+                />
+              </FormField>
+            </EditCard>
 
-          <Field id="body" label="เนื้อหา (The Brief)" error={errors.body?.message} required>
-            <Controller
-              control={control}
-              name="body"
-              render={({ field }) => (
-                <TiptapEditor
-                  id="body"
-                  value={field.value}
-                  onChange={field.onChange}
-                  ariaLabel="เนื้อหาผลงาน"
+            <EditCard title="ข้อมูลโปรเจกต์">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  id="roomType"
+                  label="ประเภทพื้นที่"
+                  error={errors.roomType?.message}
+                  required
+                >
+                  <Controller
+                    control={control}
+                    name="roomType"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={(v) => field.onChange(v as RoomType)}
+                      >
+                        <SelectTrigger
+                          id="roomType"
+                          aria-label="ประเภทพื้นที่"
+                          className="w-full"
+                        >
+                          <SelectValue placeholder="เลือกประเภท">
+                            {(v) =>
+                              v && v in ROOM_TYPE_LABELS
+                                ? ROOM_TYPE_LABELS[v as RoomType]
+                                : 'เลือกประเภท'
+                            }
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {roomTypes.map((r) => (
+                            <SelectItem key={r} value={r}>
+                              {ROOM_TYPE_LABELS[r]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </FormField>
+
+                <FormField
+                  id="style"
+                  label="สไตล์"
+                  error={errors.style?.message}
+                  required
+                >
+                  <Input
+                    id="style"
+                    {...register('style')}
+                    placeholder="เช่น japandi, minimalist"
+                  />
+                </FormField>
+
+                <FormField
+                  id="yearCompleted"
+                  label="ปีที่เสร็จ"
+                  error={errors.yearCompleted?.message}
+                >
+                  <Input
+                    id="yearCompleted"
+                    type="number"
+                    inputMode="numeric"
+                    min={1990}
+                    max={2100}
+                    {...register('yearCompleted', {
+                      valueAsNumber: true,
+                      setValueAs: (v) =>
+                        v === '' || Number.isNaN(v) ? null : Number(v),
+                    })}
+                  />
+                </FormField>
+
+                <FormField
+                  id="location"
+                  label="สถานที่"
+                  error={errors.location?.message}
+                >
+                  <Input
+                    id="location"
+                    {...register('location', {
+                      setValueAs: (v) => (v ? String(v) : null),
+                    })}
+                    placeholder="เช่น อารีย์, กรุงเทพฯ"
+                  />
+                </FormField>
+
+                <FormField
+                  id="areaSqm"
+                  label="พื้นที่ (ตร.ม.)"
+                  error={errors.areaSqm?.message}
+                >
+                  <Input
+                    id="areaSqm"
+                    type="number"
+                    step="0.01"
+                    inputMode="decimal"
+                    {...register('areaSqm', {
+                      setValueAs: (v) =>
+                        v === '' || Number.isNaN(Number(v)) ? null : Number(v),
+                    })}
+                  />
+                </FormField>
+
+                <FormField
+                  id="budgetRange"
+                  label="ช่วงงบประมาณ"
+                  error={errors.budgetRange?.message}
+                >
+                  <Controller
+                    control={control}
+                    name="budgetRange"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value ?? BUDGET_NONE}
+                        onValueChange={(v) =>
+                          field.onChange(
+                            v === BUDGET_NONE ? null : (v as BudgetRange),
+                          )
+                        }
+                      >
+                        <SelectTrigger
+                          id="budgetRange"
+                          aria-label="ช่วงงบประมาณ"
+                          className="w-full"
+                        >
+                          <SelectValue placeholder="— ไม่ระบุ —">
+                            {(v) =>
+                              v && v !== BUDGET_NONE && v in BUDGET_LABELS
+                                ? BUDGET_LABELS[v as BudgetRange]
+                                : '— ไม่ระบุ —'
+                            }
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={BUDGET_NONE}>— ไม่ระบุ —</SelectItem>
+                          {budgetRanges.map((b) => (
+                            <SelectItem key={b} value={b}>
+                              {BUDGET_LABELS[b]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </FormField>
+              </div>
+            </EditCard>
+
+            <EditCard title="เนื้อหา (The Brief)">
+              <FormField id="body" label="เนื้อหา" error={errors.body?.message} required>
+                <Controller
+                  control={control}
+                  name="body"
+                  render={({ field }) => (
+                    <TiptapEditor
+                      id="body"
+                      value={field.value}
+                      onChange={field.onChange}
+                      ariaLabel="เนื้อหาผลงาน"
+                    />
+                  )}
+                />
+              </FormField>
+            </EditCard>
+
+            {slotRight && <EditCard title="แกลเลอรีภาพ">{slotRight}</EditCard>}
+
+            <EditCard title="เนื้อหาเพิ่มเติม · Editorial">
+              <FormField
+                id="durationDays"
+                label="ระยะเวลา (วัน)"
+                error={errors.durationDays?.message}
+                hint='จะแสดงเป็น "45 วัน", "6 สัปดาห์" หรือ "3 เดือน" อัตโนมัติ'
+              >
+                <Input
+                  id="durationDays"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={3650}
+                  placeholder="เช่น 45"
+                  {...register('durationDays', {
+                    setValueAs: (v) =>
+                      v === '' || v === null || Number.isNaN(Number(v))
+                        ? null
+                        : Number(v),
+                  })}
+                />
+              </FormField>
+
+              <FormField
+                id="clientQuote"
+                label="คำพูดจากลูกค้า"
+                error={errors.clientQuote?.message}
+                hint="จะแสดงเป็น Pull Quote กลางหน้า"
+              >
+                <Textarea
+                  id="clientQuote"
+                  {...register('clientQuote', {
+                    setValueAs: (v) => (v === '' ? null : v ?? null),
+                  })}
+                  maxLength={500}
+                  rows={4}
+                  placeholder="ใส่คำพูดโดยไม่ต้องมีเครื่องหมายคำพูด"
+                />
+              </FormField>
+
+              <FormField
+                id="clientName"
+                label="ชื่อลูกค้า"
+                error={errors.clientName?.message}
+                hint="แสดงเป็นที่มาของคำพูด (— คุณสมศรี)"
+              >
+                <Input
+                  id="clientName"
+                  {...register('clientName', {
+                    setValueAs: (v) => (v === '' ? null : v ?? null),
+                  })}
+                  maxLength={80}
+                  placeholder="เช่น คุณสมศรี หรือ เจ้าของบ้าน"
+                />
+              </FormField>
+
+              <FormField
+                id="designerNote"
+                label="หมายเหตุจากนักออกแบบ"
+                error={errors.designerNote?.message}
+                hint='จะแสดงก่อน CTA card พร้อมลายเซ็น "— ทีม house-peach"'
+              >
+                <Textarea
+                  id="designerNote"
+                  {...register('designerNote', {
+                    setValueAs: (v) => (v === '' ? null : v ?? null),
+                  })}
+                  maxLength={1000}
+                  rows={6}
+                />
+              </FormField>
+
+              <MaterialsField control={control} register={register} errors={errors} />
+            </EditCard>
+
+            <EditCard title="สีของ card">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <ColorField
+                  id="tone"
+                  label="โทนพื้นหลัง"
+                  value={toneValue}
+                  {...register('tone')}
+                />
+                <ColorField
+                  id="accent"
+                  label="สีเน้น"
+                  value={accentValue}
+                  {...register('accent')}
+                />
+              </div>
+              <div
+                className="mt-3 flex h-12 items-center gap-3 rounded-md px-4 text-sm"
+                style={{ backgroundColor: toneValue, color: accentValue }}
+                aria-hidden
+              >
+                ตัวอย่าง · text uses accent on tone background
+              </div>
+            </EditCard>
+          </>
+        }
+        side={
+          <>
+            <EditCard title="การเผยแพร่">
+              <FormField label="สถานะ" error={errors.status?.message}>
+                <StatusRadioGroup
+                  value={status}
+                  onChange={(v) =>
+                    setValue('status', v, { shouldDirty: true })
+                  }
+                  options={STATUS_OPTIONS}
+                />
+              </FormField>
+
+              <div className="border-t border-border pt-4">
+                <ToggleSwitch
+                  id="homeSection"
+                  checked={homeSection === 'discover'}
+                  onChange={(next) =>
+                    setValue(
+                      'homeSection',
+                      (next ? 'discover' : 'none') as HomeSection,
+                      { shouldDirty: true },
+                    )
+                  }
+                  label="แนะนำหน้าแรก"
+                  description='โชว์ในส่วน "ค้นพบงานออกแบบ" บนหน้า Home (สูงสุด 4 · ต้องเผยแพร่ด้วย)'
+                />
+              </div>
+            </EditCard>
+
+            <EditCard title="แท็ก">
+              {tagOptions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  ยังไม่มีแท็กที่กำหนดให้ใช้กับผลงาน — เพิ่มจาก{' '}
+                  <a href="/admin/tags" className="underline">
+                    /admin/tags
+                  </a>
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {tagOptions.map((t) => {
+                    const active = selectedTagIds.includes(t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => toggleTag(t.id)}
+                        aria-pressed={active}
+                        className={
+                          'rounded-full border px-3 py-1 text-xs transition ' +
+                          (active
+                            ? 'border-foreground bg-foreground text-background'
+                            : 'border-border bg-background text-foreground hover:bg-muted')
+                        }
+                      >
+                        {t.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </EditCard>
+
+            <EditCard title="หมวดหมู่" description="เลือกได้ 1 หมวด (ไม่บังคับ)">
+              {categoryOptions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  ยังไม่มีหมวดหมู่สำหรับผลงาน — เพิ่มจาก{' '}
+                  <a href="/admin/categories" className="underline">
+                    /admin/categories
+                  </a>
+                </p>
+              ) : (
+                <Controller
+                  control={control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value == null ? 'none' : String(field.value)}
+                      onValueChange={(v) =>
+                        field.onChange(v === 'none' ? null : Number(v))
+                      }
+                    >
+                      <SelectTrigger
+                        id="categoryId"
+                        aria-label="หมวดหมู่"
+                        className="w-full"
+                      >
+                        <SelectValue placeholder="เลือกหมวดหมู่">
+                          {(v) => {
+                            if (!v || v === 'none') return '— ไม่มีหมวดหมู่ —';
+                            return (
+                              categoryOptions.find((c) => String(c.id) === v)
+                                ?.name ?? 'เลือกหมวดหมู่'
+                            );
+                          }}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— ไม่มีหมวดหมู่ —</SelectItem>
+                        {categoryOptions.map((c) => (
+                          <SelectItem key={c.id} value={String(c.id)}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
               )}
-            />
-          </Field>
-        </Section>
-
-        <Section title="รายละเอียดโครงการ">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field id="roomType" label="ประเภทพื้นที่" error={errors.roomType?.message} required>
-              <Controller
-                control={control}
-                name="roomType"
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(v) => field.onChange(v as RoomType)}
-                  >
-                    <SelectTrigger id="roomType" aria-label="ประเภทพื้นที่">
-                      <SelectValue placeholder="เลือกประเภท">
-                        {(v) =>
-                          v && v in ROOM_TYPE_LABELS
-                            ? ROOM_TYPE_LABELS[v as RoomType]
-                            : 'เลือกประเภท'
-                        }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roomTypes.map((r) => (
-                        <SelectItem key={r} value={r}>
-                          {ROOM_TYPE_LABELS[r]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
-
-            <Field id="style" label="สไตล์" error={errors.style?.message} required>
-              <Input
-                id="style"
-                {...register('style')}
-                placeholder="เช่น japandi, minimalist"
-              />
-            </Field>
-
-            <Field id="yearCompleted" label="ปีที่เสร็จ" error={errors.yearCompleted?.message}>
-              <Input
-                id="yearCompleted"
-                type="number"
-                inputMode="numeric"
-                min={1990}
-                max={2100}
-                {...register('yearCompleted', { valueAsNumber: true, setValueAs: (v) => (v === '' || Number.isNaN(v) ? null : Number(v)) })}
-              />
-            </Field>
-
-            <Field id="location" label="สถานที่" error={errors.location?.message}>
-              <Input
-                id="location"
-                {...register('location', { setValueAs: (v) => (v ? String(v) : null) })}
-                placeholder="เช่น อารีย์, กรุงเทพฯ"
-              />
-            </Field>
-
-            <Field id="areaSqm" label="พื้นที่ (ตร.ม.)" error={errors.areaSqm?.message}>
-              <Input
-                id="areaSqm"
-                type="number"
-                step="0.01"
-                inputMode="decimal"
-                {...register('areaSqm', { setValueAs: (v) => (v === '' || Number.isNaN(Number(v)) ? null : Number(v)) })}
-              />
-            </Field>
-
-            <Field id="budgetRange" label="ช่วงงบประมาณ" error={errors.budgetRange?.message}>
-              <Controller
-                control={control}
-                name="budgetRange"
-                render={({ field }) => (
-                  <Select
-                    value={field.value ?? BUDGET_NONE}
-                    onValueChange={(v) =>
-                      field.onChange(v === BUDGET_NONE ? null : (v as BudgetRange))
-                    }
-                  >
-                    <SelectTrigger id="budgetRange" aria-label="ช่วงงบประมาณ">
-                      <SelectValue placeholder="— ไม่ระบุ —">
-                        {(v) =>
-                          v && v !== BUDGET_NONE && v in BUDGET_LABELS
-                            ? BUDGET_LABELS[v as BudgetRange]
-                            : '— ไม่ระบุ —'
-                        }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={BUDGET_NONE}>— ไม่ระบุ —</SelectItem>
-                      {budgetRanges.map((b) => (
-                        <SelectItem key={b} value={b}>
-                          {BUDGET_LABELS[b]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
-          </div>
-        </Section>
-
-        <Section title="สีของ card">
-          <div className="grid gap-4 md:grid-cols-2">
-            <ColorField
-              id="tone"
-              label="โทนพื้นหลัง"
-              value={toneValue}
-              {...register('tone')}
-            />
-            <ColorField
-              id="accent"
-              label="สีเน้น"
-              value={accentValue}
-              {...register('accent')}
-            />
-          </div>
-          <div
-            className="mt-3 flex h-12 items-center gap-3 rounded-md px-4 text-sm"
-            style={{ backgroundColor: toneValue, color: accentValue }}
-            aria-hidden
-          >
-            ตัวอย่าง · text uses accent on tone background
-          </div>
-        </Section>
-
-        <Section title="แท็ก">
-          {tagOptions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              ยังไม่มีแท็กที่กำหนดให้ใช้กับผลงาน — เพิ่มจาก{' '}
-              <a href="/admin/tags" className="underline">
-                /admin/tags
-              </a>
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {tagOptions.map((t) => {
-                const active = selectedTagIds.includes(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => toggleTag(t.id)}
-                    aria-pressed={active}
-                    className={
-                      'rounded-full border px-3 py-1 text-xs transition ' +
-                      (active
-                        ? 'border-foreground bg-foreground text-background'
-                        : 'border-border bg-background text-foreground hover:bg-muted')
-                    }
-                  >
-                    {t.name}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </Section>
-
-        <Section title="หมวดหมู่">
-          {categoryOptions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              ยังไม่มีหมวดหมู่สำหรับผลงาน — เพิ่มจาก{' '}
-              <a href="/admin/categories" className="underline">
-                /admin/categories
-              </a>
-            </p>
-          ) : (
-            <Field
-              id="categoryId"
-              label="เลือกได้ 1 หมวด (ไม่บังคับ)"
-              error={errors.categoryId?.message}
-            >
-              <Controller
-                control={control}
-                name="categoryId"
-                render={({ field }) => (
-                  <Select
-                    value={field.value == null ? 'none' : String(field.value)}
-                    onValueChange={(v) =>
-                      field.onChange(v === 'none' ? null : Number(v))
-                    }
-                  >
-                    <SelectTrigger id="categoryId" aria-label="หมวดหมู่">
-                      <SelectValue placeholder="เลือกหมวดหมู่">
-                        {(v) => {
-                          if (!v || v === 'none') return '— ไม่มีหมวดหมู่ —';
-                          return (
-                            categoryOptions.find((c) => String(c.id) === v)
-                              ?.name ?? 'เลือกหมวดหมู่'
-                          );
-                        }}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">— ไม่มีหมวดหมู่ —</SelectItem>
-                      {categoryOptions.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
-          )}
-        </Section>
-
-        <Section title="เนื้อหาเพิ่มเติม · Editorial">
-          <Field id="durationDays" label="ระยะเวลา (วัน)" error={errors.durationDays?.message}>
-            <Input
-              id="durationDays"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={3650}
-              placeholder="เช่น 45"
-              {...register('durationDays', {
-                setValueAs: (v) =>
-                  v === '' || v === null || Number.isNaN(Number(v)) ? null : Number(v),
-              })}
-            />
-            <p className="text-[11px] text-muted-foreground">
-              จะแสดงเป็น &quot;45 วัน&quot;, &quot;6 สัปดาห์&quot; หรือ &quot;3 เดือน&quot; อัตโนมัติ
-            </p>
-          </Field>
-
-          <Field id="clientQuote" label="คำพูดจากลูกค้า" error={errors.clientQuote?.message}>
-            <Textarea
-              id="clientQuote"
-              {...register('clientQuote', {
-                setValueAs: (v) => (v === '' ? null : v ?? null),
-              })}
-              maxLength={500}
-              rows={4}
-              placeholder="ใส่คำพูดโดยไม่ต้องมีเครื่องหมายคำพูด"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              จะแสดงเป็น Pull Quote กลางหน้า
-            </p>
-          </Field>
-
-          <Field id="clientName" label="ชื่อลูกค้า" error={errors.clientName?.message}>
-            <Input
-              id="clientName"
-              {...register('clientName', {
-                setValueAs: (v) => (v === '' ? null : v ?? null),
-              })}
-              maxLength={80}
-              placeholder="เช่น คุณสมศรี หรือ เจ้าของบ้าน"
-            />
-            <p className="text-[11px] text-muted-foreground">
-              แสดงเป็นที่มาของคำพูด (— คุณสมศรี)
-            </p>
-          </Field>
-
-          <Field id="designerNote" label="หมายเหตุจากนักออกแบบ" error={errors.designerNote?.message}>
-            <Textarea
-              id="designerNote"
-              {...register('designerNote', {
-                setValueAs: (v) => (v === '' ? null : v ?? null),
-              })}
-              maxLength={1000}
-              rows={6}
-            />
-            <p className="text-[11px] text-muted-foreground">
-              จะแสดงก่อน CTA card พร้อมลายเซ็น &quot;— ทีม house-peach&quot;
-            </p>
-          </Field>
-
-          <MaterialsField
-            control={control}
-            register={register}
-            errors={errors}
-          />
-        </Section>
-
-        <Section title="สถานะ">
-          <Field id="status" label="สถานะ" error={errors.status?.message}>
-            <Controller
-              control={control}
-              name="status"
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(v) => field.onChange(v as ContentStatus)}
-                >
-                  <SelectTrigger id="status" aria-label="สถานะ">
-                    <SelectValue placeholder="เลือกสถานะ">
-                      {(v) =>
-                        v && v in STATUS_LABELS
-                          ? STATUS_LABELS[v as ContentStatus]
-                          : 'เลือกสถานะ'
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {contentStatuses.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {STATUS_LABELS[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </Field>
-
-          <Field
-            id="homeSection"
-            label="โชว์บนหน้า Home"
-            error={errors.homeSection?.message}
-          >
-            <Controller
-              control={control}
-              name="homeSection"
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(v) => field.onChange(v as HomeSection)}
-                >
-                  <SelectTrigger id="homeSection" aria-label="โชว์บนหน้า Home">
-                    <SelectValue placeholder="ไม่โชว์">
-                      {(v) =>
-                        v && v in HOME_SECTION_LABELS
-                          ? HOME_SECTION_LABELS[v as HomeSection]
-                          : 'ไม่โชว์'
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {homeSections.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {HOME_SECTION_LABELS[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            <p className="text-[11px] text-muted-foreground">
-              เลือกว่าผลงานชิ้นนี้จะโชว์ใน section &quot;ค้นพบงานออกแบบ&quot; บนหน้า Home หรือไม่ (โชว์สูงสุด 4 ใน grid ใหญ่).
-              ต้องเป็นสถานะ &quot;เผยแพร่&quot; ด้วยจึงจะปรากฏ. Section &quot;งานล่าสุดของเรา&quot; จะ auto จากวันที่เผยแพร่ — ไม่ต้องเลือก
-            </p>
-          </Field>
-        </Section>
-        </div>
-
-        {slotRight && (
-          <aside
-            aria-label="แกลเลอรีของผลงาน"
-            className="min-w-0 lg:sticky lg:top-16 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto"
-          >
-            {slotRight}
-          </aside>
-        )}
-      </div>
-
-      {/* Sticky bottom action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div
-          className={
-            'mx-auto flex items-center justify-between gap-3 px-4 py-3 lg:px-6 ' +
-            (slotRight ? 'max-w-7xl' : 'max-w-3xl')
-          }
-        >
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => router.push('/admin/works')}
-            disabled={pendingAny}
-          >
-            ← กลับไป list
-          </Button>
-          <div className="flex items-center gap-2">
-            {mode === 'edit' && (
-              <>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={pendingAny}
-                  aria-busy={deleting}
-                >
-                  {deleting ? <Spinner className="size-4" /> : null}
-                  ลบ
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handlePublishToggle}
-                  disabled={pendingAny}
-                  aria-busy={publishing}
-                  title={
-                    isDirty
-                      ? 'กำลังเปลี่ยนสถานะเท่านั้น — การแก้ form ที่ยังไม่บันทึกจะไม่ถูกบันทึก'
-                      : undefined
-                  }
-                >
-                  {publishing ? <Spinner className="size-4" /> : null}
-                  {isPublished ? 'เปลี่ยนเป็น draft' : 'เผยแพร่ตอนนี้'}
-                </Button>
-              </>
-            )}
-            <Button type="submit" disabled={pendingAny} aria-busy={saving}>
-              {saving ? (
-                <>
-                  <Spinner className="size-4" />
-                  <span>กำลังบันทึก…</span>
-                </>
-              ) : mode === 'new' ? (
-                'สร้าง'
-              ) : (
-                'บันทึก'
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
+            </EditCard>
+          </>
+        }
+      />
     </form>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-3 rounded-xl border border-border bg-card p-4">
-      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-      <div className="space-y-4">{children}</div>
-    </section>
-  );
-}
-
-function Field({
-  id,
-  label,
-  error,
-  required,
-  children,
-}: {
-  id: string;
-  label: string;
-  error?: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs">
-        {label}
-        {required && <span className="text-destructive"> *</span>}
-      </Label>
-      {children}
-      {error && (
-        <p id={`${id}-error`} role="alert" className="text-xs text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
   );
 }
 

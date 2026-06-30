@@ -1,13 +1,21 @@
 import type { Metadata } from 'next';
 
 import { AboutPanel } from '@/components/public/home/AboutPanel';
-import { DiscoverSection } from '@/components/public/home/DiscoverSection';
+import { BlogTeaser } from '@/components/public/home/BlogTeaser';
+import { ContactShowcase } from '@/components/public/home/ContactShowcase';
+import { CtaBand } from '@/components/public/home/CtaBand';
 import { HeroSection } from '@/components/public/home/HeroSection';
-import { RecentWorksStrip } from '@/components/public/home/RecentWorksStrip';
 import { RoomTypeCategories } from '@/components/public/home/RoomTypeCategories';
-import { StatsCard } from '@/components/public/home/StatsCard';
+import { TeamSection } from '@/components/public/home/TeamSection';
+import { WorksShowcase } from '@/components/public/home/WorksShowcase';
+import type { WorkCardWork } from '@/components/public/work/WorkCard';
 import { env } from '@/env';
-import { listHomeFeed, getPublishedWorkCountsByRoomType, listDistinctWorkStyles } from '@/lib/services/work';
+import { listRecentPosts } from '@/lib/services/post';
+import {
+  listHomeFeed,
+  getPublishedWorkCountsByRoomType,
+  listDistinctWorkStyles,
+} from '@/lib/services/work';
 
 // B4 — ISR revalidate per ARCHITECTURE §8.1
 export const revalidate = 300;
@@ -16,7 +24,7 @@ export const metadata: Metadata = {
   // M2 — brand-last per .claude/rules/seo.md § Title format
   title: 'studio ตกแต่งบ้านสไตล์ warm-tone minimalist — house-peach',
   description:
-    'สตูดิโอตกแต่งบ้านสไตล์ warm-tone minimalist · ดูผลงานล่าสุดและบทความเกี่ยวกับการตกแต่งที่อบอุ่นและมีรสนิยม',
+    'สตูดิโอตกแต่งบ้านสไตล์ warm-tone minimalist · ดูแลครบตั้งแต่ concept จนถึงบ้านที่พร้อมอยู่จริง — ดูผลงานล่าสุดและบทความตกแต่งบ้าน',
   alternates: { canonical: '/' },
   openGraph: {
     title: 'house-peach',
@@ -29,46 +37,43 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image' },
 };
 
-const homeStats = [
-  { value: '12+', label: 'ผลงาน', labelEn: 'Projects' },
-  { value: '80+', label: 'ลูกค้า', labelEn: 'Clients' },
-  { value: '4.9★', label: 'รีวิว', labelEn: 'Reviews' },
-];
-
 export default async function HomePage() {
-  // Concurrent fetches using Promise.all per plan
-  const [{ discover, recent }, roomCounts, distinctStyles] = await Promise.all([
+  const [{ discover, recent }, roomCounts, distinctStyles, recentPosts] = await Promise.all([
     listHomeFeed(),
     getPublishedWorkCountsByRoomType(),
     listDistinctWorkStyles(),
+    listRecentPosts({ limit: 3 }),
   ]);
 
   const styleChoices = distinctStyles.filter((s): s is string => s != null);
-  const featuredWork = discover[0];
-  const smallWorks = discover.slice(1, 4);
-  const recentPool = recent;
+
+  // Curated discover first, then recent — dedup by slug. WorkPublicListItem is a
+  // superset of WorkCardWork, so it flows straight into the card components.
+  const bySlug = new Map<string, WorkCardWork>();
+  for (const work of [...discover, ...recent]) {
+    if (!bySlug.has(work.slug)) bySlug.set(work.slug, work);
+  }
+  const showcaseWorks = Array.from(bySlug.values()).slice(0, 9);
 
   return (
     <>
-      {/* Mobile: StatsCard stacks below hero. Desktop: absolute bottom-right inside hero. */}
       <HeroSection
         imagePath="/images/home/hero.svg"
         imageAlt="ห้องนั่งเล่นสไตล์ warm-tone minimalist แสนอบอุ่น"
         styleChoices={styleChoices}
-        statsSlot={<StatsCard stats={homeStats} />}
       />
       <RoomTypeCategories counts={roomCounts} />
-      {featuredWork && (
-        <DiscoverSection
-          featuredWork={featuredWork}
-          smallWorks={smallWorks}
-        />
-      )}
       <AboutPanel
         imagePath="/images/home/about.svg"
-        imageAlt="สตูดิโอ house-peach ทีมงานในระหว่างโปรเจกต์ตกแต่งบ้าน"
+        imageAlt="สตูดิโอ house-peach ระหว่างโปรเจกต์ตกแต่งบ้าน"
+        secondaryImagePath="/images/home/showcase-1.svg"
+        secondaryImageAlt="รายละเอียดงานตกแต่งของ house-peach"
       />
-      <RecentWorksStrip works={recentPool} />
+      <WorksShowcase works={showcaseWorks} />
+      <ContactShowcase works={showcaseWorks} />
+      <TeamSection />
+      <BlogTeaser posts={recentPosts} />
+      <CtaBand />
     </>
   );
 }
