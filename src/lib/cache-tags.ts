@@ -50,6 +50,7 @@ export function bumpPostPaths() {
 export const tags = {
   posts: 'posts',
   works: 'works',
+  categories: 'categories',
   sitemap: 'sitemap',
   post: (id: number) => `post:${id}`,
   work: (id: number) => `work:${id}`,
@@ -93,6 +94,20 @@ export function bumpWorkById(id: number) {
  * Call from every service function in `lib/services/tag.ts`.
  */
 export function bumpTags() {
+  revalidateTag(tags.posts, 'max');
+  revalidateTag(tags.works, 'max');
+  bumpPostPaths();
+  bumpWorkPaths();
+}
+
+/**
+ * Cache bust for a category mutation. Categories are admin-only in V1 (not yet
+ * rendered on public pages), but a rename/delete may affect content listings
+ * once `/blog/category/[slug]` ships — bust both domains, same rationale as
+ * `bumpTags()`. Call from every service function in `lib/services/category.ts`.
+ */
+export function bumpCategories() {
+  revalidateTag(tags.categories, 'max');
   revalidateTag(tags.posts, 'max');
   revalidateTag(tags.works, 'max');
   bumpPostPaths();

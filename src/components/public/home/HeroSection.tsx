@@ -2,7 +2,6 @@ import Image from 'next/image';
 import type { ReactNode } from 'react';
 
 import { FadeUp } from '@/components/motion/FadeUp';
-import { labels } from '@/lib/i18n/labels';
 import { HeroSearchForm } from './HeroSearchForm';
 
 type Props = {
@@ -41,21 +40,21 @@ export function HeroSection({ imagePath, imageAlt, styleChoices, statsSlot }: Pr
             <FadeUp immediate className="max-w-xl w-full">
               {/* Eyebrow — P1: lang attributes so TTS switches synthesiser correctly */}
               <p className="text-xs uppercase tracking-widest text-white/70 mb-3">
-                <span lang="th">{labels.homeHeroEyebrow.th}</span>
+                <span lang="th">ผลงาน</span>
                 <span aria-hidden="true"> · </span>
-                <span lang="en">{labels.homeHeroEyebrow.en}</span>
+                <span lang="en">Works</span>
               </p>
 
               {/* h1 */}
               <h1 id="hero-title" className="font-serif text-4xl md:text-5xl lg:text-[52px] font-bold tracking-[-0.02em] text-white leading-[1.05]">
-                {labels.homeHeroH1Line1.th}
+                ห้องที่อบอุ่น
                 <br />
-                {labels.homeHeroH1Line2.th}
+                เหมือนกอด
               </h1>
 
               {/* Lead */}
               <p className="mt-4 text-sm text-white/90 max-w-xs md:max-w-sm leading-relaxed">
-                {labels.homeHeroLead.th}
+                ห้องดี ไม่ต้องดัง ดีเทลเรียบ อบอุ่มถึงใจ
               </p>
 
               {/* Hero Search Form - Client Component */}

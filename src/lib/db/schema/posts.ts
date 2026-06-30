@@ -14,6 +14,7 @@ import {
 import { users } from './users';
 import { mediaAssets } from './mediaAssets';
 import { tags } from './tags';
+import { categories } from './categories';
 
 export const contentStatusValues = ['draft', 'published', 'archived'] as const;
 export type ContentStatus = (typeof contentStatusValues)[number];
@@ -25,10 +26,17 @@ export const posts = mysqlTable(
     slug: varchar('slug', { length: 140 }).notNull(),
     title: varchar('title', { length: 180 }).notNull(),
     excerpt: varchar('excerpt', { length: 280 }).notNull(),
-    bodyMdx: mediumtext('body_mdx').notNull(),
+    // Holds a Tiptap (ProseMirror) JSON doc string.
+    body: mediumtext('body').notNull(),
     coverMediaAssetId: bigint('cover_media_asset_id', {
       mode: 'number',
     }).references(() => mediaAssets.id, { onDelete: 'set null' }),
+    // Primary editorial category (single-select). Nullable — content can exist
+    // uncategorised. ON DELETE SET NULL so deleting a category never deletes posts.
+    categoryId: bigint('category_id', { mode: 'number' }).references(
+      () => categories.id,
+      { onDelete: 'set null' },
+    ),
     status: mysqlEnum('status', contentStatusValues).notNull().default('draft'),
     publishedAt: timestamp('published_at'),
     authorId: bigint('author_id', { mode: 'number' })
@@ -44,6 +52,7 @@ export const posts = mysqlTable(
     index('posts_status_published_idx').on(t.status, t.publishedAt),
     index('posts_author_idx').on(t.authorId),
     index('posts_cover_idx').on(t.coverMediaAssetId),
+    index('posts_category_idx').on(t.categoryId),
   ],
 );
 

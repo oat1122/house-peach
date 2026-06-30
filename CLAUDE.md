@@ -116,7 +116,7 @@
 
 | # | หัวข้อ | ตัดสินใจ |
 |---|---|---|
-| D1 | Blog content storage | **MDX-in-DB** (`posts.body_mdx`) + CodeMirror 6 editor ใน admin |
+| D1 | Blog/work content storage | **Tiptap (ProseMirror) JSON-in-DB** (`posts.body` / `works.body`, physical column ยังชื่อ `body_mdx`) + Tiptap WYSIWYG editor ใน admin (`components/admin/posts/TiptapEditor.tsx`) render ผ่าน `lib/tiptap/render.tsx` whitelist. *(เดิม: MDX-in-DB + CodeMirror)* |
 | D2 | Deploy target | **ยังไม่ตัดสินใจ** — ใช้ `ImageStore` interface แบบ pluggable (`LocalImageStore` default, swap เป็น `S3ImageStore` ทีหลัง) |
 | D3 | Testing | **Vitest ตั้งแต่ Phase 0**, Playwright Phase 9 |
 | D4 | Theme presets | **4 presets**: peach (default) / cream / sage / ink (dark) |
@@ -161,7 +161,7 @@ ANALYZE=true npm run build
 - **ฮาร์ดโค้ด hex** → 1 theme อาจสวย แต่ดาร์กโหมด `ink` แตก contrast
 - **`outline-none` ไม่มี `focus-visible:ring`** → ผู้ใช้ keyboard มองไม่เห็นโฟกัส
 - **JSON-LD ไม่ตรงเนื้อหา** → Google ลงโทษ misleading structured data
-- **`<script>` ใน MDX body** → ถูก strip โดย whitelist อยู่แล้ว แต่ admin งง ทำไมไม่ render — explain ใน editor preview
+- **Content body = Tiptap JSON** (ไม่ใช่ MDX แล้ว) → render ผ่าน `lib/tiptap/render.tsx` whitelist; node/mark ที่ไม่รู้จักถูก drop เงียบ ๆ. ไม่มี raw `<script>` node ใน ProseMirror JSON
 
 ---
 

@@ -12,7 +12,8 @@ import {
   listLatestOtherWorks,
 } from '@/lib/services/work';
 import { listWorkImages } from '@/lib/services/workImage';
-import { compileWorkMdx } from '@/lib/mdx/compile';
+import { renderTiptap } from '@/lib/tiptap/render';
+import { tiptapToText } from '@/lib/tiptap/text';
 import { buildCreativeWorkLd, buildWorkBreadcrumbLd } from '@/lib/seo/jsonld';
 import { buildWorkMetadata } from '@/lib/seo/metadata';
 import { resolveRoomTypeLabel } from '@/lib/utils/workLabels';
@@ -25,10 +26,6 @@ import { WorkHero } from '@/components/public/work/WorkHero';
 import { WorkChaptersNav, type ChapterEntry } from '@/components/public/work/WorkChaptersNav';
 import { WorkGallerySection } from '@/components/public/work/WorkGallerySection';
 import { buildClusters } from '@/components/public/work/WorkGallery';
-import {
-  composeBeforeAfterEmbed,
-  type EmbedPairData,
-} from '@/components/public/work/BeforeAfterEmbed';
 import type { BeforeAfterImage } from '@/components/public/work/BeforeAfterSlider';
 import { WorkStatBand } from '@/components/public/work/WorkStatBand';
 import { WorkChapterDivider } from '@/components/public/work/WorkChapterDivider';
@@ -108,7 +105,7 @@ export default async function WorkDetailPage(props: {
   const bottomRelated = await listLatestOtherWorks(work.id, sidebarIds, 3);
 
   // ── Server-side pre-computation ──────────────────────────────────────────
-  const firstBodyChar = work.bodyMdx.trim()[0] ?? '';
+  const firstBodyChar = tiptapToText(work.body).trim()[0] ?? '';
 
   const cover = work.coverMediaAssetId
     ? images.find((r) => r.mediaAssetId === work.coverMediaAssetId)
@@ -142,10 +139,9 @@ export default async function WorkDetailPage(props: {
   const detailImages = images.filter((i) => i.kind === 'detail');
   const detailClusters = buildClusters(detailImages);
 
-  // Build MDX embed closure (BeforeAfter inline component for bodyMdx)
-  const pairData = buildPairLookup(images);
-  const BeforeAfter = composeBeforeAfterEmbed(pairData);
-  const body = await compileWorkMdx(work.bodyMdx, { BeforeAfter });
+  // Render the Tiptap JSON body server-side (RSC). The inline before/after
+  // embed was dropped — Before & After renders as its own structured chapter.
+  const body = renderTiptap(work.body);
 
   // ── Chapter presence map — drives WorkChaptersNav filtering ─────────────
   const hasChorus = chorusCluster != null;
@@ -464,43 +460,6 @@ export default async function WorkDetailPage(props: {
 }
 
 // ── Helpers (unchanged from v1) ───────────────────────────────────────────────
-
-function buildPairLookup(
-  images: Awaited<ReturnType<typeof listWorkImages>>,
-): Map<number, EmbedPairData> {
-  const map = new Map<number, EmbedPairData>();
-  const rowsByPair = new Map<number, typeof images>();
-  for (const row of images) {
-    if (row.pairId == null) continue;
-    const list = rowsByPair.get(row.pairId) ?? [];
-    list.push(row);
-    rowsByPair.set(row.pairId, list);
-  }
-  for (const [pairId, rows] of rowsByPair) {
-    if (rows.length !== 2) continue;
-    const before = rows.find((r) => r.kind === 'before');
-    const after = rows.find((r) => r.kind === 'after');
-    if (!before || !after) continue;
-    map.set(pairId, {
-      id: pairId,
-      before: toBA(before),
-      after: toBA(after),
-      caption: after.caption ?? before.caption ?? null,
-    });
-  }
-  return map;
-}
-
-function toBA(row: {
-  asset: { path: string; alt: string; title: string; width: number; height: number };
-}): BeforeAfterImage {
-  return {
-    src: row.asset.path,
-    alt: row.asset.alt || row.asset.title || '',
-    width: row.asset.width || 1600,
-    height: row.asset.height || 1000,
-  };
-}
 
 function toBAImage(
   row: {

@@ -53,6 +53,8 @@ import {
   type RoomType,
 } from '@/lib/validation/work';
 import { contentStatuses, type ContentStatus } from '@/lib/validation/post';
+import { EMPTY_TIPTAP_DOC } from '@/lib/tiptap/text';
+import { TiptapEditor } from '@/components/admin/posts/TiptapEditor';
 
 type TagOption = { id: number; name: string; slug: string };
 
@@ -120,7 +122,7 @@ export function WorkForm({
     title: defaultValues?.title ?? '',
     slug: (defaultValues?.slug ?? '') as WorkInsert['slug'],
     summary: defaultValues?.summary ?? '',
-    bodyMdx: defaultValues?.bodyMdx ?? '',
+    body: defaultValues?.body ?? EMPTY_TIPTAP_DOC,
     roomType: defaultValues?.roomType ?? 'living',
     style: defaultValues?.style ?? '',
     yearCompleted: defaultValues?.yearCompleted ?? null,
@@ -354,16 +356,19 @@ export function WorkForm({
             />
           </Field>
 
-          <Field id="bodyMdx" label="เนื้อหา (MDX)" error={errors.bodyMdx?.message} required>
-            <Textarea
-              id="bodyMdx"
-              {...register('bodyMdx')}
-              rows={10}
-              className="font-mono text-xs"
+          <Field id="body" label="เนื้อหา (The Brief)" error={errors.body?.message} required>
+            <Controller
+              control={control}
+              name="body"
+              render={({ field }) => (
+                <TiptapEditor
+                  id="body"
+                  value={field.value}
+                  onChange={field.onChange}
+                  ariaLabel="เนื้อหาผลงาน"
+                />
+              )}
             />
-            <p className="text-[11px] text-muted-foreground">
-              รองรับ Markdown + MDX components · Phase 4 จะเปลี่ยนเป็น CodeMirror
-            </p>
           </Field>
         </Section>
 

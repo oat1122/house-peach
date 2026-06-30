@@ -7,7 +7,6 @@ import { RecentWorksStrip } from '@/components/public/home/RecentWorksStrip';
 import { RoomTypeCategories } from '@/components/public/home/RoomTypeCategories';
 import { StatsCard } from '@/components/public/home/StatsCard';
 import { env } from '@/env';
-import { labels } from '@/lib/i18n/labels';
 import { listHomeFeed, getPublishedWorkCountsByRoomType, listDistinctWorkStyles } from '@/lib/services/work';
 
 // B4 — ISR revalidate per ARCHITECTURE §8.1
@@ -31,21 +30,9 @@ export const metadata: Metadata = {
 };
 
 const homeStats = [
-  {
-    value: labels.homeStat1Value.th,
-    label: labels.homeStat1Label.th,
-    labelEn: labels.homeStat1Label.en,
-  },
-  {
-    value: labels.homeStat2Value.th,
-    label: labels.homeStat2Label.th,
-    labelEn: labels.homeStat2Label.en,
-  },
-  {
-    value: labels.homeStat3Value.th,
-    label: labels.homeStat3Label.th,
-    labelEn: labels.homeStat3Label.en,
-  },
+  { value: '12+', label: 'ผลงาน', labelEn: 'Projects' },
+  { value: '80+', label: 'ลูกค้า', labelEn: 'Clients' },
+  { value: '4.9★', label: 'รีวิว', labelEn: 'Reviews' },
 ];
 
 export default async function HomePage() {

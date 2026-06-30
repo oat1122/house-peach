@@ -15,6 +15,7 @@ import {
 import { tags as tagsTable } from '@/lib/db/schema/tags';
 import { users } from '@/lib/db/schema/users';
 import { readingTime } from '@/lib/utils/readingTime';
+import { tiptapToText } from '@/lib/tiptap/text';
 import type { PostInsert, PostUpdate } from '@/lib/validation/post';
 
 // ── Shared shape helpers ───────────────────────────────────────────────────────
@@ -47,7 +48,7 @@ export type PostDetail = PostRow & {
   tagNames: string[];
 };
 
-/** Compact shape for listing cards — heavy fields (bodyMdx) excluded. */
+/** Compact shape for listing cards — heavy fields (body) excluded. */
 export type PostListItem = {
   id: number;
   slug: string;
@@ -432,7 +433,7 @@ async function assertPostSlugAvailable(slug: string, excludeId?: number) {
 
 /**
  * Create a new post. `authorId` is taken from the session at the action layer
- * — never from form input. `readingTimeMin` is precomputed from bodyMdx.
+ * — never from form input. `readingTimeMin` is precomputed from the body text.
  */
 export async function createPost(
   input: PostInsert,
@@ -446,7 +447,7 @@ export async function createPost(
         slug: input.slug,
         title: input.title,
         excerpt: input.excerpt,
-        bodyMdx: input.bodyMdx,
+        body: input.body,
         coverMediaAssetId: input.coverMediaAssetId ?? null,
         status: input.status,
         publishedAt:
@@ -454,7 +455,7 @@ export async function createPost(
             ? (input.publishedAt ?? new Date())
             : null,
         authorId,
-        readingTimeMin: readingTime(input.bodyMdx),
+        readingTimeMin: readingTime(tiptapToText(input.body)),
       });
       const insertId = (result as unknown as { insertId?: number }[])[0]?.insertId;
       if (!insertId) throw new Error('Failed to insert post');
@@ -483,7 +484,7 @@ export async function createPost(
 /**
  * Patch-style update — only fields present in `input` are written. Allows the
  * admin form to omit fields the user didn't touch (matches WorkForm pattern).
- * Recomputes `readingTimeMin` whenever bodyMdx is included.
+ * Recomputes `readingTimeMin` whenever body is included.
  */
 export async function updatePost(input: PostUpdate): Promise<void> {
   if (input.slug) await assertPostSlugAvailable(input.slug, input.id);
@@ -494,9 +495,9 @@ export async function updatePost(input: PostUpdate): Promise<void> {
       if (input.title !== undefined) set.title = input.title;
       if (input.slug !== undefined) set.slug = input.slug;
       if (input.excerpt !== undefined) set.excerpt = input.excerpt;
-      if (input.bodyMdx !== undefined) {
-        set.bodyMdx = input.bodyMdx;
-        set.readingTimeMin = readingTime(input.bodyMdx);
+      if (input.body !== undefined) {
+        set.body = input.body;
+        set.readingTimeMin = readingTime(tiptapToText(input.body));
       }
       if (input.coverMediaAssetId !== undefined)
         set.coverMediaAssetId = input.coverMediaAssetId ?? null;

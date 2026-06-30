@@ -18,6 +18,7 @@ import { mediaAssets } from './mediaAssets';
 import { mediaPairs } from './mediaPairs';
 import { contentStatusValues } from './posts';
 import { tags } from './tags';
+import { categories } from './categories';
 
 export const roomTypeValues = [
   'living',
@@ -68,7 +69,8 @@ export const works = mysqlTable(
     slug: varchar('slug', { length: 140 }).notNull(),
     title: varchar('title', { length: 180 }).notNull(),
     summary: varchar('summary', { length: 280 }).notNull(),
-    bodyMdx: mediumtext('body_mdx').notNull(),
+    // Holds a Tiptap (ProseMirror) JSON doc string.
+    body: mediumtext('body').notNull(),
     roomType: mysqlEnum('room_type', roomTypeValues).notNull(),
     style: varchar('style', { length: 60 }).notNull(),
     yearCompleted: smallint('year_completed'),
@@ -78,6 +80,11 @@ export const works = mysqlTable(
     coverMediaAssetId: bigint('cover_media_asset_id', {
       mode: 'number',
     }).references(() => mediaAssets.id, { onDelete: 'set null' }),
+    // Primary editorial category (single-select). Nullable, ON DELETE SET NULL.
+    categoryId: bigint('category_id', { mode: 'number' }).references(
+      () => categories.id,
+      { onDelete: 'set null' },
+    ),
     tone: varchar('tone', { length: 7 }).notNull().default('#f5d6c0'),
     accent: varchar('accent', { length: 7 }).notNull().default('#a87856'),
     status: mysqlEnum('status', contentStatusValues).notNull().default('draft'),
@@ -100,6 +107,7 @@ export const works = mysqlTable(
     index('works_status_published_idx').on(t.status, t.publishedAt),
     index('works_room_style_idx').on(t.roomType, t.style),
     index('works_cover_idx').on(t.coverMediaAssetId),
+    index('works_category_idx').on(t.categoryId),
     // Composite index for home feed: filter by section + status, order by publishedAt
     index('works_home_section_idx').on(t.homeSection, t.status, t.publishedAt),
   ],

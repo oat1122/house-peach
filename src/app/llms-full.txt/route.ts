@@ -8,16 +8,15 @@ import { users } from '@/lib/db/schema/users';
 import { works, workTags } from '@/lib/db/schema/works';
 import { env } from '@/env';
 import { resolveBudgetLabel, resolveRoomTypeLabel } from '@/lib/utils/workLabels';
+import { tiptapToText } from '@/lib/tiptap/text';
 
 /**
- * llms-full.txt — companion to /llms.txt that ships the body MDX of every
+ * llms-full.txt — companion to /llms.txt that ships the body text of every
  * published work + post so AI agents (Claude, ChatGPT, Cursor) can ingest the
  * full site content in a single fetch instead of crawling each detail page.
  *
- * Body is emitted verbatim from posts.bodyMdx / works.bodyMdx. JSX components
- * registered in lib/mdx/components.tsx (MDXImage, Quote, Aside, Gallery,
- * CodeBlock) survive as readable inline JSX — LLMs parse these fine. We do
- * NOT compile MDX → HTML here; plain markdown is what LLMs prefer.
+ * Bodies are stored as Tiptap JSON; we flatten them to plain text via
+ * `tiptapToText()` — that's what LLMs prefer over raw JSON or HTML.
  *
  * Cache invariant: /llms-full.txt is wired into bumpPostPaths/bumpWorkPaths
  * (lib/cache-tags.ts) so it stays in sync with publish/unpublish events.
@@ -34,7 +33,7 @@ export async function GET() {
         slug: works.slug,
         title: works.title,
         summary: works.summary,
-        bodyMdx: works.bodyMdx,
+        body: works.body,
         roomType: works.roomType,
         style: works.style,
         yearCompleted: works.yearCompleted,
@@ -55,7 +54,7 @@ export async function GET() {
         slug: posts.slug,
         title: posts.title,
         excerpt: posts.excerpt,
-        bodyMdx: posts.bodyMdx,
+        body: posts.body,
         readingTimeMin: posts.readingTimeMin,
         publishedAt: posts.publishedAt,
         updatedAt: posts.updatedAt,
@@ -138,7 +137,7 @@ export async function GET() {
       lines.push('');
       lines.push('### Body');
       lines.push('');
-      lines.push(w.bodyMdx);
+      lines.push(tiptapToText(w.body));
       lines.push('');
     }
   }
@@ -166,7 +165,7 @@ export async function GET() {
       lines.push('');
       lines.push('### Body');
       lines.push('');
-      lines.push(p.bodyMdx);
+      lines.push(tiptapToText(p.body));
       lines.push('');
     }
   }

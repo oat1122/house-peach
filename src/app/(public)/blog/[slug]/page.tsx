@@ -5,7 +5,8 @@ import { inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { tags as tagsTable } from '@/lib/db/schema/tags';
 import { getPublishedPostBySlug, listRelatedPosts, listRecentPosts } from '@/lib/services/post';
-import { compileWorkMdx } from '@/lib/mdx/compile';
+import { renderTiptap } from '@/lib/tiptap/render';
+import { tiptapToText } from '@/lib/tiptap/text';
 import { extractHeadings } from '@/lib/utils/extractHeadings';
 import { estimateWordCount } from '@/lib/utils/wordCount';
 import { buildPostMetadata } from '@/lib/seo/metadata';
@@ -67,22 +68,22 @@ export default async function BlogDetailPage(props: {
   if (!post) notFound();
 
   // ── Parallel data fetch ────────────────────────────────────────────────────
-  const [compiledMdx, [relatedPosts, recentPosts, tagRows]] = await Promise.all([
-    compileWorkMdx(post.bodyMdx),
-    Promise.all([
-      listRelatedPosts({ id: post.id, tagIds: post.tagIds }, 3),
-      listRecentPosts({ excludeId: post.id, limit: 4 }),
-      post.tagIds.length > 0
-        ? db
-            .select({ id: tagsTable.id, slug: tagsTable.slug, name: tagsTable.name })
-            .from(tagsTable)
-            .where(inArray(tagsTable.id, post.tagIds))
-        : Promise.resolve<{ id: number; slug: string; name: string }[]>([]),
-    ]),
+  const [relatedPosts, recentPosts, tagRows] = await Promise.all([
+    listRelatedPosts({ id: post.id, tagIds: post.tagIds }, 3),
+    listRecentPosts({ excludeId: post.id, limit: 4 }),
+    post.tagIds.length > 0
+      ? db
+          .select({ id: tagsTable.id, slug: tagsTable.slug, name: tagsTable.name })
+          .from(tagsTable)
+          .where(inArray(tagsTable.id, post.tagIds))
+      : Promise.resolve<{ id: number; slug: string; name: string }[]>([]),
   ]);
 
+  // Render the Tiptap JSON body server-side (RSC — no client JS for reading).
+  const compiledBody = renderTiptap(post.body);
+
   // Extract headings for TOC (server-side — no DOM traversal on client)
-  const headings = extractHeadings(post.bodyMdx);
+  const headings = extractHeadings(post.body);
 
   // Use tag rows for proper slugs (enables correct filter links in meta row)
   const tags = tagRows.map((t) => ({ name: t.name, slug: t.slug }));
@@ -125,7 +126,7 @@ export default async function BlogDetailPage(props: {
     coverUrl,
     authorName: post.authorName,
     url: postUrl,
-    wordCount: estimateWordCount(post.bodyMdx),
+    wordCount: estimateWordCount(tiptapToText(post.body)),
   });
   const breadcrumbLd = buildPostBreadcrumbLd(post);
 
@@ -151,7 +152,7 @@ export default async function BlogDetailPage(props: {
           {/* Main content — `div`, not `main`. The layout already wraps the
               page in <main>; nesting <main> would emit two main landmarks. */}
           <div>
-            <PostContent compiledMdx={compiledMdx} />
+            <PostContent body={compiledBody} />
             <PostFooter url={postUrl} title={post.title} />
 
             {/* Mobile: sidebar cards reflow below footer */}

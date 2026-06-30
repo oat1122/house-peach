@@ -57,7 +57,9 @@ import {
   type ContentStatus,
 } from '@/lib/validation/post';
 
-import { MdxEditor } from './MdxEditor';
+import { EMPTY_TIPTAP_DOC } from '@/lib/tiptap/text';
+
+import { TiptapEditor } from './TiptapEditor';
 import { PostSeoPreview } from './PostSeoPreview';
 
 type TagOption = { id: number; name: string; slug: string };
@@ -112,7 +114,7 @@ export function PostForm({
     title: defaultValues?.title ?? '',
     slug: (defaultValues?.slug ?? '') as PostInsert['slug'],
     excerpt: defaultValues?.excerpt ?? '',
-    bodyMdx: defaultValues?.bodyMdx ?? '',
+    body: defaultValues?.body ?? EMPTY_TIPTAP_DOC,
     tagIds: defaultValues?.tagIds ?? [],
     coverMediaAssetId: defaultValues?.coverMediaAssetId ?? null,
     status: defaultValues?.status ?? 'draft',
@@ -137,7 +139,7 @@ export function PostForm({
   const titleValue = watch('title');
   const slugValue = watch('slug');
   const excerptValue = watch('excerpt');
-  const bodyValue = watch('bodyMdx');
+  const bodyValue = watch('body');
   const status = watch('status');
   const selectedTagIds = watch('tagIds');
   const selectedTagNames = tagOptions
@@ -369,29 +371,28 @@ export function PostForm({
               </Field>
             </Section>
 
-            <Section title="เนื้อหา (MDX)">
+            <Section title="เนื้อหา">
               <Field
-                id="bodyMdx"
-                label="รองรับ markdown + MDX components (Quote, Aside, Gallery, MDXImage)"
-                error={errors.bodyMdx?.message}
+                id="body"
+                label="เขียนเนื้อหาแบบ WYSIWYG — หัวข้อ ตัวหนา รายการ ลิงก์ รูป"
+                error={errors.body?.message}
                 required
               >
                 <Controller
                   control={control}
-                  name="bodyMdx"
+                  name="body"
                   render={({ field }) => (
-                    <MdxEditor
-                      id="bodyMdx"
+                    <TiptapEditor
+                      id="body"
                       value={field.value}
                       onChange={field.onChange}
-                      ariaLabel="เนื้อหาบทความ MDX"
+                      ariaLabel="เนื้อหาบทความ"
                       libraryAssets={libraryAssets}
                     />
                   )}
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  ไม่ใส่ <code>#</code> H1 — title แสดงนอก MDX แล้ว.
-                  เริ่มที่ <code>##</code> H2
+                  หัวข้อในเนื้อหาเริ่มที่ H2 — title ของบทความแสดงนอกเนื้อหาแล้ว
                 </p>
               </Field>
             </Section>
@@ -443,7 +444,7 @@ export function PostForm({
               title={titleValue}
               slug={slugValue}
               excerpt={excerptValue}
-              bodyMdx={bodyValue}
+              body={bodyValue}
               coverPath={coverAsset?.path ?? null}
               coverAlt={coverAsset?.alt ?? null}
               status={status}

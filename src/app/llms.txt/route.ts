@@ -61,7 +61,7 @@ export async function GET() {
   );
   lines.push('');
   lines.push(
-    'Stack: Next.js 16 (App Router + RSC) · Tailwind v4 · shadcn/ui · Drizzle/MariaDB · NextAuth v5 · next-mdx-remote.',
+    'Stack: Next.js 16 (App Router + RSC) · Tailwind v4 · shadcn/ui · Drizzle/MariaDB · NextAuth v5 · Tiptap.',
   );
   lines.push('');
 

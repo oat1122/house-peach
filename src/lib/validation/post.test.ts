@@ -2,6 +2,13 @@ import { describe, it, expect } from 'vitest';
 
 import { PostInsert, PostPublic } from './post';
 
+// A Tiptap doc whose plain text clears the 20-char minimum.
+const bodyDoc = (text: string) =>
+  JSON.stringify({
+    type: 'doc',
+    content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
+  });
+
 // ── PostInsert ──────────────────────────────────────────────────────────────
 
 describe('PostInsert', () => {
@@ -9,7 +16,7 @@ describe('PostInsert', () => {
     title: 'ห้องนั่งเล่น Japandi',
     slug: 'japandi-living-room',
     excerpt: 'a'.repeat(80),
-    bodyMdx: 'a'.repeat(20),
+    body: bodyDoc('a'.repeat(20)),
     tagIds: [],
     status: 'draft' as const,
   };
@@ -64,8 +71,13 @@ describe('PostInsert', () => {
     expect(result.success).toBe(true);
   });
 
-  it('rejects bodyMdx shorter than 20 chars', () => {
-    const result = PostInsert.safeParse({ ...validInput, bodyMdx: 'a'.repeat(19) });
+  it('rejects body whose text is shorter than 20 chars', () => {
+    const result = PostInsert.safeParse({ ...validInput, body: bodyDoc('a'.repeat(19)) });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects body that is not a valid Tiptap doc', () => {
+    const result = PostInsert.safeParse({ ...validInput, body: 'not json' });
     expect(result.success).toBe(false);
   });
 
@@ -129,10 +141,10 @@ describe('PostPublic', () => {
     expect(PostPublic.safeParse(validPublic).success).toBe(true);
   });
 
-  it('does not include bodyMdx field', () => {
+  it('does not include body field', () => {
     // Zod v4: shape lives in ._zod.def.shape
     const shape = (PostPublic as unknown as { _zod: { def: { shape: Record<string, unknown> } } })._zod.def.shape;
-    expect(shape).not.toHaveProperty('bodyMdx');
+    expect(shape).not.toHaveProperty('body');
   });
 
   it('does not include authorId field', () => {

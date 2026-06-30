@@ -36,6 +36,20 @@
       "when": 1779023667376,
       "tag": "0004_hard_squadron_supreme",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1782802954142,
+      "tag": "0005_rename_body_column",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1782803117928,
+      "tag": "0006_messy_silver_surfer",
+      "breakpoints": true
     }
   ]
 }

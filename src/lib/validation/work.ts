@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { HexColor, Slug } from './common';
+import { HexColor, Slug, TiptapBody } from './common';
 import { contentStatuses } from './post';
 
 export const roomTypes = [
@@ -38,7 +38,7 @@ export const WorkInsert = z.object({
   // input gate we still ask admins for a meaningful 80+ to avoid the
   // generic "house-peach" padding showing up on every short-summary work.
   summary: z.string().min(80, 'สรุปต้องยาวอย่างน้อย 80 ตัวอักษร').max(280),
-  bodyMdx: z.string().min(20, 'รายละเอียดยังสั้นเกินไป'),
+  body: TiptapBody('รายละเอียดยังสั้นเกินไป'),
   roomType: z.enum(roomTypes),
   style: z.string().min(2).max(60),
   yearCompleted: z.coerce.number().int().min(1990).max(2100).nullable().optional(),

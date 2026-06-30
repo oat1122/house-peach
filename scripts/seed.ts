@@ -4,10 +4,25 @@ import { eq, inArray } from 'drizzle-orm';
 import { db, pool } from '@/lib/db';
 import { users } from '@/lib/db/schema/users';
 import { tags } from '@/lib/db/schema/tags';
+import { categories } from '@/lib/db/schema/categories';
 import { mediaAssets } from '@/lib/db/schema/mediaAssets';
 import { posts, postImages, postTags } from '@/lib/db/schema/posts';
 import { works, workImages, workTags } from '@/lib/db/schema/works';
 import { readingTime } from '@/lib/utils/readingTime';
+import { tiptapToText, type TiptapNode } from '@/lib/tiptap/text';
+
+// Minimal Tiptap (ProseMirror) doc builders so seed content stays readable.
+const para = (text: string): TiptapNode => ({
+  type: 'paragraph',
+  content: [{ type: 'text', text }],
+});
+const h2 = (text: string): TiptapNode => ({
+  type: 'heading',
+  attrs: { level: 2 },
+  content: [{ type: 'text', text }],
+});
+const doc = (...nodes: TiptapNode[]): string =>
+  JSON.stringify({ type: 'doc', content: nodes });
 
 type Tag = { slug: string; name: string; kind: 'post' | 'work' | 'both' };
 
@@ -22,17 +37,52 @@ const SEED_TAGS: Tag[] = [
   { slug: 'inspiration', name: 'Inspiration', kind: 'post' },
 ];
 
+type Category = {
+  slug: string;
+  name: string;
+  kind: 'post' | 'work' | 'both';
+  color: string;
+  summary: string;
+};
+
+const SEED_CATEGORIES: Category[] = [
+  {
+    slug: 'inspiration',
+    name: 'แรงบันดาลใจ',
+    kind: 'both',
+    color: '#b89b7a',
+    summary: 'ไอเดียและแรงบันดาลใจในการแต่งบ้านโทนอบอุ่น',
+  },
+  {
+    slug: 'how-to',
+    name: 'ฮาวทู',
+    kind: 'post',
+    color: '#7a8bb0',
+    summary: 'คู่มือและเทคนิคจัดบ้านทำเองได้ อธิบายเป็นขั้นตอน',
+  },
+  {
+    slug: 'case-study',
+    name: 'รีวิวงานจริง',
+    kind: 'work',
+    color: '#8fa088',
+    summary: 'เจาะลึกเบื้องหลังโปรเจกต์จริง ตั้งแต่โจทย์จนถึงผลลัพธ์',
+  },
+];
+
 const POSTS = [
   {
     slug: '5-tips-japandi-bedroom',
+    categorySlug: 'how-to',
     title: '5 เทคนิคแต่งห้องนอนสไตล์ Japandi',
     excerpt:
       'รวมเทคนิคที่ใช้ได้จริงในการแต่งห้องนอนสไตล์ Japandi — เลือกวัสดุ ทอนสี และจัดแสงให้ผ่อนคลายแบบบ้านญี่ปุ่นผสมสแกนดิเนเวีย',
-    bodyMdx: `Japandi คือการผสมผสานของความเรียบง่ายแบบสแกนดิเนเวียกับงานคราฟต์ของญี่ปุ่น
-
-## 1. เริ่มจากการเลือกโทนสีพื้นฐาน
-
-ใช้ palette ที่ warm + natural — ครีม, เบจอ่อน, สีไม้โอ๊ค`,
+    body: doc(
+      para(
+        'Japandi คือการผสมผสานของความเรียบง่ายแบบสแกนดิเนเวียกับงานคราฟต์ของญี่ปุ่น',
+      ),
+      h2('1. เริ่มจากการเลือกโทนสีพื้นฐาน'),
+      para('ใช้ palette ที่ warm + natural — ครีม, เบจอ่อน, สีไม้โอ๊ค'),
+    ),
     tagSlugs: ['japandi', 'how-to', 'bedroom'],
     status: 'published' as const,
   },
@@ -41,7 +91,9 @@ const POSTS = [
     title: 'Warm Minimalist Living Room — จะอบอุ่นแต่ไม่รก ทำได้',
     excerpt:
       'minimalism ไม่ได้แปลว่าเย็นชา — เลือกพรม wool หนา ๆ, sofa สีเบจ, และไม้ทอนสี เพื่อให้ห้องดูเรียบแต่อบอุ่นรับลูกค้าได้',
-    bodyMdx: `ลูกค้าหลายคนคิดว่า minimalist = cold + sterile แต่ความจริงไม่ใช่`,
+    body: doc(
+      para('ลูกค้าหลายคนคิดว่า minimalist = cold + sterile แต่ความจริงไม่ใช่'),
+    ),
     tagSlugs: ['minimalist', 'warm-tone', 'inspiration', 'living-room'],
     status: 'published' as const,
   },
@@ -50,7 +102,9 @@ const POSTS = [
     title: 'วิธีเลือกสีทาผนังโทนอุ่นที่ไม่ยาก',
     excerpt:
       'การเลือกสีทาผนังโทนอุ่นที่เข้ากับห้องในไทยมีรายละเอียดมากกว่าที่คิด — undertone, ทิศของแสง และพื้นที่จริง',
-    bodyMdx: `เลือกสีผนังจากบนตัวอย่างใน showroom ไม่เคยตรงกับห้องจริง`,
+    body: doc(
+      para('เลือกสีผนังจากบนตัวอย่างใน showroom ไม่เคยตรงกับห้องจริง'),
+    ),
     tagSlugs: ['how-to', 'warm-tone'],
     status: 'published' as const,
   },
@@ -62,7 +116,7 @@ const WORKS = [
     title: 'Japandi Bedroom — คอนโดย่านอารีย์',
     summary:
       'คอนโด 32 ตร.ม. รีโนเวทห้องนอนหลักให้เป็น sanctuary ส่วนตัวสไตล์ Japandi โทนอุ่น',
-    bodyMdx: `เริ่มจากห้องนอนเดิมที่ปูพื้นกระเบื้องลายหินเย็น ๆ`,
+    body: doc(para('เริ่มจากห้องนอนเดิมที่ปูพื้นกระเบื้องลายหินเย็น ๆ')),
     roomType: 'bedroom' as const,
     style: 'japandi',
     yearCompleted: 2025,
@@ -79,7 +133,7 @@ const WORKS = [
     title: 'Warm Living Room — บ้านทาวน์โฮม ทองหล่อ',
     summary:
       'รีโนเวทห้องนั่งเล่นทาวน์โฮม 3 ชั้นให้เป็น warm minimalist สำหรับครอบครัวเล็ก',
-    bodyMdx: `เจ้าของบ้านเป็นคู่รักรุ่นใหม่ ทำงาน creative`,
+    body: doc(para('เจ้าของบ้านเป็นคู่รักรุ่นใหม่ ทำงาน creative')),
     roomType: 'living' as const,
     style: 'minimalist',
     yearCompleted: 2025,
@@ -96,7 +150,7 @@ const WORKS = [
     title: 'Kitchen Makeover — บ้านเดี่ยว เชียงใหม่',
     summary:
       'รีโนเวทครัวขนาด 16 ตร.ม. ในเชียงใหม่ ให้รับแสงธรรมชาติเต็มที่',
-    bodyMdx: `บ้านเก่าอายุ 20 ปี ครัวเดิมมืดและคับแคบ`,
+    body: doc(para('บ้านเก่าอายุ 20 ปี ครัวเดิมมืดและคับแคบ')),
     roomType: 'kitchen' as const,
     style: 'modern-rustic',
     yearCompleted: 2024,
@@ -168,11 +222,11 @@ async function seedPosts(authorId: number, tagIdBySlug: Map<string, number>) {
         slug: p.slug,
         title: p.title,
         excerpt: p.excerpt,
-        bodyMdx: p.bodyMdx,
+        body: p.body,
         status: p.status,
         publishedAt: new Date(),
         authorId,
-        readingTimeMin: readingTime(p.bodyMdx),
+        readingTimeMin: readingTime(tiptapToText(p.body)),
       });
       const postId = (result as unknown as { insertId?: number }[])[0]?.insertId;
       if (!postId) throw new Error(`failed to insert post ${p.slug}`);
@@ -206,7 +260,7 @@ async function seedWorks(tagIdBySlug: Map<string, number>) {
         slug: w.slug,
         title: w.title,
         summary: w.summary,
-        bodyMdx: w.bodyMdx,
+        body: w.body,
         roomType: w.roomType,
         style: w.style,
         yearCompleted: w.yearCompleted,

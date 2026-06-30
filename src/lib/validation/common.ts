@@ -1,5 +1,24 @@
 import { z } from 'zod';
 
+import { parseTiptapDoc, tiptapToText } from '@/lib/tiptap/text';
+
+/** Minimum plain-text length for a content body (posts + works). */
+const BODY_MIN_TEXT = 20;
+
+/**
+ * Tiptap (ProseMirror) JSON doc body — must parse to a `doc` node and contain
+ * at least {@link BODY_MIN_TEXT} characters of plain text. Shared by post +
+ * work schemas; `message` is the Thai user-facing error per validation.md.
+ */
+export function TiptapBody(message: string) {
+  return z
+    .string()
+    .refine(
+      (v) => parseTiptapDoc(v) != null && tiptapToText(v).length >= BODY_MIN_TEXT,
+      message,
+    );
+}
+
 /**
  * URL slug — lowercase ASCII letters / digits, Thai characters (U+0E00–U+0E7F),
  * and dash separators. No leading/trailing dash, no consecutive dashes.

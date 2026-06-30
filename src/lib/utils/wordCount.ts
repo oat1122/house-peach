@@ -1,18 +1,18 @@
 /**
- * Rough word-count estimate for MDX body text. Used by WorkConceptSection to
- * decide whether to render a two-column layout or single-column flow (spec
- * §S13c: threshold = 250 words).
+ * Rough word-count estimate for body text. Pass the plain text extracted from
+ * a Tiptap doc via `tiptapToText()`. Used to size the BlogPosting JSON-LD
+ * `wordCount` and WorkConceptSection layout (spec §S13c: threshold = 250 words).
  *
  * Thai word boundary detection is linguistically complex. We approximate:
  *   - Thai characters (U+0E00–U+0E7F) / 5  ≈ word count
  *   - Latin words counted by whitespace tokenisation
  *
- * MDX syntax noise is stripped before counting so JSX tags, heading markers,
- * code fences, and link URLs do not inflate the estimate.
+ * Residual markdown/markup is stripped defensively so stray tokens don't
+ * inflate the estimate.
  */
-export function estimateWordCount(mdx: string): number {
+export function estimateWordCount(text: string): number {
   // 1. Remove fenced code blocks (```...```)
-  let text = mdx.replace(/```[\s\S]*?```/g, ' ');
+  text = text.replace(/```[\s\S]*?```/g, ' ');
 
   // 2. Remove inline code (`...`)
   text = text.replace(/`[^`]*`/g, ' ');

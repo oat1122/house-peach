@@ -30,7 +30,7 @@ function makePost(overrides: Record<string, unknown> = {}) {
     slug: 'my-post',
     title: 'My Post',
     excerpt: 'A short excerpt for the post.',
-    bodyMdx: '## Hello',
+    body: '{"type":"doc","content":[]}',
     status: 'published' as const,
     publishedAt: new Date('2024-06-01T00:00:00Z'),
     updatedAt: new Date('2024-06-02T00:00:00Z'),

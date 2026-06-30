@@ -9,7 +9,6 @@ import Link from 'next/link';
 import { createContactInquiryAction } from '@/lib/actions/contact';
 import { ContactInquiryInsert, serviceTypes } from '@/lib/validation/contact';
 import { budgetRanges } from '@/lib/validation/work';
-import { labels } from '@/lib/i18n/labels';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -31,23 +30,21 @@ const FormSchema = ContactInquiryInsert.extend({
 });
 type FormValues = z.input<typeof FormSchema>;
 
-const lang = 'th' as const;
-
-// Map service type values to label keys
-const SERVICE_LABEL_MAP: Record<(typeof serviceTypes)[number], keyof typeof labels> = {
-  full_design: 'serviceFullDesign',
-  consultation: 'serviceConsultation',
-  partial: 'servicePartial',
-  other: 'serviceOther',
+// Service type values → display label
+const SERVICE_LABEL: Record<(typeof serviceTypes)[number], string> = {
+  full_design: 'ออกแบบทั้งหมด',
+  consultation: 'ปรึกษาออกแบบ',
+  partial: 'บางส่วน / ห้องเดียว',
+  other: 'อื่น ๆ',
 };
 
-// Map budget range values to label keys
-const BUDGET_LABEL_MAP: Record<(typeof budgetRanges)[number], keyof typeof labels> = {
-  under_100k: 'budgetUnder100k',
-  '100k_300k': 'budget100k300k',
-  '300k_700k': 'budget300k700k',
-  '700k_1.5m': 'budget700k1_5m',
-  '1.5m_plus': 'budget1_5mPlus',
+// Budget range values → display label
+const BUDGET_LABEL: Record<(typeof budgetRanges)[number], string> = {
+  under_100k: 'ต่ำกว่า 100,000',
+  '100k_300k': '100,000 – 300,000',
+  '300k_700k': '300,000 – 700,000',
+  '700k_1.5m': '700,000 – 1.5M',
+  '1.5m_plus': '1.5M ขึ้นไป',
 };
 
 export function ContactForm() {
@@ -99,7 +96,7 @@ export function ContactForm() {
             setError(key, { message: (messages as string[])[0] });
           }
         } else {
-          setGenericError(result.error ?? labels.contactErrorGeneric[lang]);
+          setGenericError(result.error ?? 'ส่งข้อความไม่สำเร็จ — ลองใหม่อีกครั้ง');
         }
       }
     });
@@ -110,7 +107,7 @@ export function ContactForm() {
       <div
         className="flex flex-col items-center gap-6 py-12 text-center"
         role="region"
-        aria-label={labels.contactSuccessTitle[lang]}
+        aria-label="ขอบคุณ — ได้รับข้อความแล้ว"
       >
         <CheckCircle2
           size={48}
@@ -129,10 +126,10 @@ export function ContactForm() {
             tabIndex={-1}
             className="text-2xl font-semibold text-ink mb-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
           >
-            {labels.contactSuccessTitle[lang]}
+            ขอบคุณ — ได้รับข้อความแล้ว
           </h2>
           <p className="text-base text-muted-brand leading-[1.65] max-w-prose mx-auto">
-            {labels.contactSuccessBody[lang]}
+            เราจะตอบกลับทางอีเมลของคุณภายใน 2 วันทำการ
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 mt-2">
@@ -140,13 +137,13 @@ export function ContactForm() {
             href="/works"
             className="inline-flex items-center justify-center min-h-[44px] px-5 rounded-md bg-ink text-bg text-sm font-medium hover:bg-ink/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
           >
-            {labels.contactSuccessSecondaryCta[lang]}
+            ดูผลงานของเรา
           </Link>
           <Link
             href="/blog"
             className="inline-flex items-center justify-center min-h-[44px] px-5 rounded-md border border-line text-ink text-sm font-medium hover:bg-bg2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
           >
-            {labels.readMore[lang]}
+            อ่านเพิ่มเติม
           </Link>
         </div>
       </div>
@@ -191,7 +188,7 @@ export function ContactForm() {
         {/* contactName */}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="contactName">
-            {labels.contactFormName[lang]}
+            ชื่อของคุณ
             <span aria-hidden="true" className="text-destructive ml-0.5">*</span>
           </Label>
           <Input
@@ -218,7 +215,7 @@ export function ContactForm() {
         {/* contactEmail */}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="contactEmail">
-            {labels.contactFormEmail[lang]}
+            อีเมล
             <span aria-hidden="true" className="text-destructive ml-0.5">*</span>
           </Label>
           <Input
@@ -245,7 +242,7 @@ export function ContactForm() {
         {/* contactPhone */}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="contactPhone">
-            {labels.contactFormPhone[lang]}
+            เบอร์โทร (ไม่บังคับ)
           </Label>
           <Input
             id="contactPhone"
@@ -270,7 +267,7 @@ export function ContactForm() {
         {/* serviceType */}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="serviceType">
-            {labels.contactFormService[lang]}
+            ประเภทบริการ
             <span aria-hidden="true" className="text-destructive ml-0.5">*</span>
           </Label>
           <select
@@ -284,7 +281,7 @@ export function ContactForm() {
             <option value="">เลือกประเภทบริการ</option>
             {serviceTypes.map((value) => (
               <option key={value} value={value}>
-                {labels[SERVICE_LABEL_MAP[value]][lang]}
+                {SERVICE_LABEL[value]}
               </option>
             ))}
           </select>
@@ -302,7 +299,7 @@ export function ContactForm() {
         {/* budgetRange */}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="budgetRange">
-            {labels.contactFormBudget[lang]}
+            งบประมาณ (ไม่บังคับ)
           </Label>
           <select
             id="budgetRange"
@@ -311,10 +308,10 @@ export function ContactForm() {
             className="min-h-[44px] w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm text-ink transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive"
             {...register('budgetRange')}
           >
-            <option value="">{labels.contactFormBudgetPlaceholder[lang]}</option>
+            <option value="">เลือกช่วงงบประมาณ</option>
             {budgetRanges.map((value) => (
               <option key={value} value={value}>
-                {labels[BUDGET_LABEL_MAP[value]][lang]}
+                {BUDGET_LABEL[value]}
               </option>
             ))}
           </select>
@@ -333,7 +330,7 @@ export function ContactForm() {
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="projectDescription">
-              {labels.contactFormDescription[lang]}
+              เล่าเกี่ยวกับโปรเจกต์ของคุณ
               <span aria-hidden="true" className="text-destructive ml-0.5">*</span>
             </Label>
             {/*
@@ -368,7 +365,7 @@ export function ContactForm() {
             id="projectDescription-help"
             className="text-xs text-muted-brand"
           >
-            {labels.contactFormDescriptionHelp[lang]}
+            ประเภทห้อง สไตล์ที่ชอบ ช่วงเวลา หรือสิ่งใดก็ตามที่จะช่วยให้เราเข้าใจห้องของคุณ
           </span>
           {errors.projectDescription && (
             <span
@@ -398,10 +395,10 @@ export function ContactForm() {
           {isPending ? (
             <>
               <Spinner className="mr-2 size-4" aria-hidden="true" />
-              <span>{labels.contactFormSubmitting[lang]}</span>
+              <span>กำลังส่ง…</span>
             </>
           ) : (
-            labels.contactFormSubmit[lang]
+            'ส่งข้อความ'
           )}
         </Button>
       </div>

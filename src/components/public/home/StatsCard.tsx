@@ -1,5 +1,4 @@
 import { FadeUp } from '@/components/motion/FadeUp';
-import { labels } from '@/lib/i18n/labels';
 
 type Stat = {
   value: string;
@@ -17,12 +16,12 @@ export function StatsCard({ stats }: Props) {
       <div className="bg-brand-card/96 backdrop-blur-md rounded-xl p-5 border border-line shadow-sm">
         {/* Header — P1: lang attributes for bilingual eyebrow */}
         <p className="text-[10px] uppercase tracking-widest text-muted-brand">
-          <span lang="th">{labels.homeStatsTitle.th}</span>
+          <span lang="th">เกี่ยวกับเรา</span>
           <span aria-hidden="true"> · </span>
-          <span lang="en">{labels.homeStatsTitle.en}</span>
+          <span lang="en">Who we are</span>
         </p>
         <p className="mt-1 text-sm text-muted-brand leading-snug">
-          {labels.homeStatsBody.th}
+          สตูดิโอตกแต่งบ้านแนว warm-tone minimalist กรุงเทพฯ
         </p>
 
         {/* Stats grid — P3: <dl>/<dt>/<dd> for term/definition semantics.

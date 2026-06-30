@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Slug } from './common';
+import { Slug, TiptapBody } from './common';
 
 export const contentStatuses = ['draft', 'published', 'archived'] as const;
 export type ContentStatus = (typeof contentStatuses)[number];
@@ -9,7 +9,7 @@ export const PostInsert = z.object({
   title: z.string().min(4, 'หัวข้อต้องยาวอย่างน้อย 4 ตัวอักษร').max(180),
   slug: Slug,
   excerpt: z.string().min(80, 'สรุปต้องยาว 80-280 ตัวอักษร').max(280),
-  bodyMdx: z.string().min(20, 'เนื้อหายังสั้นเกินไป'),
+  body: TiptapBody('เนื้อหายังสั้นเกินไป'),
   tagIds: z.array(z.coerce.number().int().positive()).default([]),
   coverMediaAssetId: z.coerce.number().int().positive().nullable().default(null),
   status: z.enum(contentStatuses).default('draft'),
@@ -23,7 +23,7 @@ export const PostUpdate = PostInsert.partial().extend({
 export type PostUpdate = z.infer<typeof PostUpdate>;
 
 /**
- * **Admin-only shape** — includes `bodyMdx`, `authorId`, and `viewCount`.
+ * **Admin-only shape** — includes `body`, `authorId`, and `viewCount`.
  * Never serialise this to a public response. Use [[PostPublic]] for any data
  * that leaves the server-only boundary (route handlers, server actions,
  * client component props). See `.claude/rules/security.md` § XSS / data leak.
@@ -33,7 +33,7 @@ export const PostSelect = z.object({
   slug: z.string(),
   title: z.string(),
   excerpt: z.string(),
-  bodyMdx: z.string(),
+  body: z.string(),
   coverMediaAssetId: z.number().int().positive().nullable(),
   status: z.enum(contentStatuses),
   publishedAt: z.date().nullable(),

@@ -28,6 +28,13 @@
   --muted-brand: #6b6560;
   --line: #e8e2d8;
   --brand-accent: #b89b7a;
+  /* Semantic status — warm-tuned. Used for content-status dot/badge
+   * (draft=warning, published=success, archived=muted, danger=delete).
+   * Light presets share one trio; ink (dark) gets lighter values below.
+   * Values darkened enough to read as text on a light tint (≥ 4.5:1). */
+  --success: #5f8f4a;
+  --warning: #a9781f;
+  --danger: #b04a3b;
 }
 
 [data-theme="cream"] {
@@ -38,6 +45,9 @@
   --muted-brand: #6b6560;
   --line: #ddd3c2;
   --brand-accent: #c9a878;
+  --success: #5f8f4a;
+  --warning: #a9781f;
+  --danger: #b04a3b;
 }
 
 [data-theme="sage"] {
@@ -48,6 +58,9 @@
   --muted-brand: #6b6560;
   --line: #d8ddc9;
   --brand-accent: #8fa088;
+  --success: #5a8a47;
+  --warning: #a9781f;
+  --danger: #b04a3b;
 }
 
 /* ── v2.2 Editorial chapter divider ────────────────────────────────────────
@@ -111,6 +124,10 @@
   --muted-brand: #a8a29a;
   --line: #3a3530;
   --brand-accent: #c4a47c;
+  /* Lighter status trio for dark bg (text contrast ≥ 4.5:1 on --bg/--bg2). */
+  --success: #8fbf78;
+  --warning: #d9b25e;
+  --danger: #d98a7c;
 }
 
 /* ── prose-post — blog article body scope ──────────────────────────────────

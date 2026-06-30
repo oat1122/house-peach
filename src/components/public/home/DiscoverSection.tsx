@@ -4,7 +4,6 @@ import { FadeUp } from '@/components/motion/FadeUp';
 import { Stagger, StaggerItem } from '@/components/motion/Stagger';
 import { FeaturedWorkCard } from '@/components/public/home/FeaturedWorkCard';
 import type { WorkCardWork } from '@/components/public/work/WorkCard';
-import { labels } from '@/lib/i18n/labels';
 
 type Props = {
   featuredWork: WorkCardWork;
@@ -27,20 +26,20 @@ export function DiscoverSection({ featuredWork, smallWorks }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-10">
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-brand">
-              <span lang="th">{labels.homeDiscoverEyebrow.th}</span>
+              <span lang="th">ผลงานเด่น</span>
               <span aria-hidden="true"> · </span>
-              <span lang="en">{labels.homeDiscoverEyebrow.en}</span>
+              <span lang="en">Featured work</span>
             </p>
             <h2
               id="discover-heading"
               className="font-serif text-3xl md:text-4xl font-bold tracking-tight text-ink mt-2"
             >
-              {labels.homeDiscoverH2.th}
+              ค้นพบงานออกแบบที่ใช่สำหรับคุณ
             </h2>
           </div>
           <div>
             <p className="text-sm md:text-base text-muted-brand leading-relaxed">
-              {labels.homeDiscoverBody.th}
+              เราเชี่ยวชาญงานตกแต่งภายในแนว warm-tone minimalist ทุกขนาดพื้นที่ ตั้งแต่ห้องเดี่ยวจนถึงบ้านทั้งหลัง
             </p>
           </div>
         </div>
@@ -80,7 +79,7 @@ export function DiscoverSection({ featuredWork, smallWorks }: Props) {
           href="/works"
           className="group/all inline-flex items-center min-h-[44px] gap-1.5 text-sm font-semibold text-brand-accent hover:text-ink transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 rounded-md"
         >
-          <span>{labels.homeDiscoverSeeAll.th.replace(' →', '')}</span>
+          <span>ดูผลงานทั้งหมด</span>
           <span className="transition-transform duration-200 group-hover/all:translate-x-1">→</span>
         </Link>
       </div>

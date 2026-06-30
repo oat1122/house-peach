@@ -32,12 +32,12 @@ This version (**Next.js 16**) has breaking changes — APIs, conventions, and fi
 
 1. **No public register / customer signup** — admin/editor login เท่านั้น ผ่าน NextAuth Credentials provider, เพิ่ม user ใหม่ผ่าน `scripts/create-admin.ts` เท่านั้น
 2. **Defense in depth auth** — middleware เป็น first gate; server action / route handler ต้อง re-check `session.user.role` เองอีกครั้งเสมอ
-3. **MDX whitelist** — content body render ผ่าน `lib/mdx/components.tsx` whitelist เท่านั้น ห้ามเปิด `<script>`, `<iframe>`, `<style>`, `<form>`, `<input>` — XSS vector
+3. **Content render whitelist** — post/work body เก็บเป็น **Tiptap (ProseMirror) JSON** render ผ่าน `lib/tiptap/render.tsx` whitelist เท่านั้น (รู้จักเฉพาะ node/mark types ที่กำหนด — unknown ถูก drop). ProseMirror JSON ไม่มี raw-HTML node ดังนั้น stored-XSS surface แคบกว่า MDX; link ผ่าน scheme allowlist, image ผ่าน `<MDXImage>`
 4. **`revalidateTag` ทุก mutation** — เปลี่ยน post/work/tag → ต้อง invalidate cache tags ที่กระทบ (ดู `.claude/rules/database.md` § Cache invalidation invariant)
 5. **Theme tokens only** — ใช้ CSS vars (`var(--ink)`, `var(--accent)`) หรือ Tailwind aliases (`text-ink`, `bg-card`) เท่านั้น ห้ามฮาร์ดโค้ด hex ใน component (ยกเว้นใน `src/styles/themes.css` ที่เป็น token source)
 
 ## Stack ที่ใช้
 
-Next.js 16 (App Router + RSC + React Compiler) · TypeScript strict · Tailwind v4 · shadcn/ui · next-themes (4 preset: peach / cream / sage / ink) · motion/react · React Hook Form + zod · NextAuth v5 + Drizzle adapter · Drizzle ORM + MariaDB · sharp · next-mdx-remote + CodeMirror 6 (admin editor) · pino · Vitest
+Next.js 16 (App Router + RSC + React Compiler) · TypeScript strict · Tailwind v4 · shadcn/ui · next-themes (4 preset: peach / cream / sage / ink) · motion/react · React Hook Form + zod · NextAuth v5 + Drizzle adapter · Drizzle ORM + MariaDB · sharp · Tiptap (ProseMirror) WYSIWYG editor + JSON render · pino · Vitest
 
 Ownership/skill index อยู่ใน `CLAUDE.md`. ARCHITECTURE.md §18 มี install commands ครบ

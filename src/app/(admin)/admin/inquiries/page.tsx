@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { requireRole } from '@/lib/auth-guard';
 import type { InquiryStatus } from '@/lib/db/schema/contactInquiries';
-import { labels } from '@/lib/i18n/labels';
 import {
   countInquiriesByStatus,
   listInquiries,
@@ -18,19 +17,18 @@ export const dynamic = 'force-dynamic';
 
 type StatusFilter = InquiryStatus | 'all';
 
-const STATUS_FILTERS: { value: StatusFilter; labelKey: keyof typeof labels }[] =
-  [
-    { value: 'all', labelKey: 'filterAll' },
-    { value: 'new', labelKey: 'inquiryStatusNew' },
-    { value: 'contacted', labelKey: 'inquiryStatusContacted' },
-    { value: 'closed', labelKey: 'inquiryStatusClosed' },
-  ];
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: 'ทั้งหมด' },
+  { value: 'new', label: 'ใหม่' },
+  { value: 'contacted', label: 'ติดต่อแล้ว' },
+  { value: 'closed', label: 'ปิดงาน' },
+];
 
 const SERVICE_LABEL: Record<ServiceType, string> = {
-  full_design: labels.serviceFullDesign.th,
-  consultation: labels.serviceConsultation.th,
-  partial: labels.servicePartial.th,
-  other: labels.serviceOther.th,
+  full_design: 'ออกแบบทั้งหมด',
+  consultation: 'ปรึกษาออกแบบ',
+  partial: 'บางส่วน / ห้องเดียว',
+  other: 'อื่น ๆ',
 };
 
 export default async function AdminInquiriesPage(props: {
@@ -89,7 +87,7 @@ export default async function AdminInquiriesPage(props: {
                     }}
                     aria-current={active ? 'page' : undefined}
                   >
-                    {labels[f.labelKey].th}{' '}
+                    {f.label}{' '}
                     <span className="opacity-70">({count})</span>
                   </Link>
                 }

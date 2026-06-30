@@ -8,7 +8,6 @@ import { InquiryStatusSelect } from '@/components/admin/inquiries/InquiryStatusS
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { requireRole } from '@/lib/auth-guard';
-import { labels } from '@/lib/i18n/labels';
 import { getInquiryById } from '@/lib/services/contact';
 import type { BudgetRange } from '@/lib/validation/work';
 import type { ServiceType } from '@/lib/validation/contact';
@@ -26,18 +25,18 @@ function sanitizeMailtoAddress(email: string): string {
 }
 
 const SERVICE_LABEL: Record<ServiceType, string> = {
-  full_design: labels.serviceFullDesign.th,
-  consultation: labels.serviceConsultation.th,
-  partial: labels.servicePartial.th,
-  other: labels.serviceOther.th,
+  full_design: 'ออกแบบทั้งหมด',
+  consultation: 'ปรึกษาออกแบบ',
+  partial: 'บางส่วน / ห้องเดียว',
+  other: 'อื่น ๆ',
 };
 
 const BUDGET_LABEL: Record<BudgetRange, string> = {
-  under_100k: labels.budgetUnder100k.th,
-  '100k_300k': labels.budget100k300k.th,
-  '300k_700k': labels.budget300k700k.th,
-  '700k_1.5m': labels.budget700k1_5m.th,
-  '1.5m_plus': labels.budget1_5mPlus.th,
+  under_100k: 'ต่ำกว่า 100,000',
+  '100k_300k': '100,000 – 300,000',
+  '300k_700k': '300,000 – 700,000',
+  '700k_1.5m': '700,000 – 1.5M',
+  '1.5m_plus': '1.5M ขึ้นไป',
 };
 
 const MAILTO_SUBJECT = encodeURIComponent('Re: คำขอจาก house-peach');

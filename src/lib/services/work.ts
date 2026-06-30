@@ -145,7 +145,7 @@ export async function createWork(input: WorkInsert): Promise<number> {
         slug: input.slug,
         title: input.title,
         summary: input.summary,
-        bodyMdx: input.bodyMdx,
+        body: input.body,
         roomType: input.roomType,
         style: input.style,
         yearCompleted: input.yearCompleted ?? null,
@@ -198,7 +198,7 @@ export async function updateWork(input: WorkUpdate): Promise<void> {
     if (input.title !== undefined) set.title = input.title;
     if (input.slug !== undefined) set.slug = input.slug;
     if (input.summary !== undefined) set.summary = input.summary;
-    if (input.bodyMdx !== undefined) set.bodyMdx = input.bodyMdx;
+    if (input.body !== undefined) set.body = input.body;
     if (input.roomType !== undefined) set.roomType = input.roomType;
     if (input.style !== undefined) set.style = input.style;
     if (input.yearCompleted !== undefined)
@@ -429,7 +429,7 @@ export async function listWorkTagOptions() {
 
 /**
  * Minimal shape required by the /works listing page cards.
- * Excludes heavy fields (bodyMdx, tone, accent, materials) not needed for the listing.
+ * Excludes heavy fields (body, tone, accent, materials) not needed for the listing.
  */
 export type WorkPublicListItem = {
   id: number;

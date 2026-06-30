@@ -13,7 +13,7 @@ import type { ReactNode } from 'react';
 type Props = {
   children: ReactNode;
   /**
-   * First character of `bodyMdx` (trimmed). Page RSC computes this before
+   * First character of the body text (trimmed). Page RSC computes this before
    * rendering so we can do the U+0E40–U+0E44 check server-side.
    */
   firstChar?: string;

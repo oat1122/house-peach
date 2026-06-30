@@ -1,7 +1,7 @@
 /**
- * Estimate reading time in whole minutes for mixed TH/EN content.
- * Counts CJK/Thai characters as words alongside whitespace-delimited tokens.
- * Targets ~220 wpm; minimum 1 minute.
+ * Estimate reading time in whole minutes for mixed TH/EN content. Pass plain
+ * text (e.g. `tiptapToText(body)`). Counts CJK/Thai characters as words
+ * alongside whitespace-delimited tokens. Targets ~220 wpm; minimum 1 minute.
  */
 const WPM = 220;
 

@@ -1,5 +1,6 @@
 export * from './users';
 export * from './tags';
+export * from './categories';
 export * from './mediaAssets';
 export * from './mediaPairs';
 export * from './posts';

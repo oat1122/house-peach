@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { FadeUp } from '@/components/motion/FadeUp';
 import { RecentWorksClient } from '@/components/public/home/RecentWorksClient';
 import type { WorkCardWork } from '@/components/public/work/WorkCard';
-import { labels } from '@/lib/i18n/labels';
 
 type Props = {
   /**
@@ -25,15 +24,15 @@ export function RecentWorksStrip({ works }: Props) {
       <FadeUp>
         <div className="mb-6 text-center">
           <p className="text-xs uppercase tracking-widest text-muted-brand">
-            <span lang="th">{labels.homeRecentEyebrow.th}</span>
+            <span lang="th">ผลงานล่าสุด</span>
             <span aria-hidden="true"> · </span>
-            <span lang="en">{labels.homeRecentEyebrow.en}</span>
+            <span lang="en">Recent works</span>
           </p>
           <h2
             id="recent-works-heading"
             className="font-serif text-3xl md:text-4xl font-bold tracking-tight text-ink mt-2"
           >
-            {labels.homeRecentH2.th}
+            งานล่าสุดของเรา
           </h2>
         </div>
       </FadeUp>
@@ -56,7 +55,7 @@ export function RecentWorksStrip({ works }: Props) {
           href="/works"
           className="inline-flex items-center min-h-[44px] gap-1 text-sm text-ink hover:underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 rounded-sm"
         >
-          {labels.homeRecentSeeAll.th}
+          ดูผลงานทั้งหมด →
         </Link>
       </div>
     </section>

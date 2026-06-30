@@ -6,7 +6,6 @@ import { useTransition } from 'react';
 import { Spinner } from '@/components/ui/spinner';
 import { setInquiryStatusAction } from '@/lib/actions/contact';
 import type { InquiryStatus } from '@/lib/db/schema/contactInquiries';
-import { labels } from '@/lib/i18n/labels';
 import { toast } from '@/lib/toast';
 
 type Props = {
@@ -15,9 +14,9 @@ type Props = {
 };
 
 const STATUS_OPTIONS: { value: InquiryStatus; label: string }[] = [
-  { value: 'new', label: labels.inquiryStatusNew.th },
-  { value: 'contacted', label: labels.inquiryStatusContacted.th },
-  { value: 'closed', label: labels.inquiryStatusClosed.th },
+  { value: 'new', label: 'ใหม่' },
+  { value: 'contacted', label: 'ติดต่อแล้ว' },
+  { value: 'closed', label: 'ปิดงาน' },
 ];
 
 export function InquiryStatusSelect({ id, current }: Props) {

@@ -42,7 +42,7 @@ export default async function EditWorkPage(props: {
     title: work.title,
     slug: work.slug as WorkInsert['slug'],
     summary: work.summary,
-    bodyMdx: work.bodyMdx,
+    body: work.body,
     roomType: work.roomType,
     style: work.style,
     yearCompleted: work.yearCompleted ?? null,

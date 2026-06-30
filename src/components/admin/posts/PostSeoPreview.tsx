@@ -6,13 +6,14 @@ import { ExternalLink, Eye, EyeOff, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { readingTime } from '@/lib/utils/readingTime';
+import { tiptapToText } from '@/lib/tiptap/text';
 import type { ContentStatus } from '@/lib/validation/post';
 
 type Props = {
   title: string;
   slug: string;
   excerpt: string;
-  bodyMdx: string;
+  body: string;
   coverPath: string | null;
   coverAlt: string | null;
   status: ContentStatus;
@@ -35,7 +36,7 @@ export function PostSeoPreview({
   title,
   slug,
   excerpt,
-  bodyMdx,
+  body,
   coverPath,
   coverAlt,
   status,
@@ -49,7 +50,7 @@ export function PostSeoPreview({
     ? `${SITE_URL}/blog/${encodeURIComponent(slug)}`
     : `${SITE_URL}/blog/${safeSlug}`;
   const ogImage = coverPath ? `${SITE_URL}${coverPath}` : null;
-  const readMin = readingTime(bodyMdx);
+  const readMin = readingTime(tiptapToText(body));
   const robots = robotsFromStatus(status);
   const fullTitle = `${safeTitle} — house-peach`;
 

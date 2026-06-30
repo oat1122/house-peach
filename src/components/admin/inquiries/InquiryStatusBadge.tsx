@@ -3,7 +3,6 @@ import type { ComponentType } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import type { InquiryStatus } from '@/lib/db/schema/contactInquiries';
-import { labels } from '@/lib/i18n/labels';
 
 const STATUS_VARIANT: Record<
   InquiryStatus,
@@ -15,9 +14,9 @@ const STATUS_VARIANT: Record<
 };
 
 const STATUS_LABEL: Record<InquiryStatus, string> = {
-  new: labels.inquiryStatusNew.th,
-  contacted: labels.inquiryStatusContacted.th,
-  closed: labels.inquiryStatusClosed.th,
+  new: 'ใหม่',
+  contacted: 'ติดต่อแล้ว',
+  closed: 'ปิดงาน',
 };
 
 // Per accessibility.md "Color contrast" — never use color alone to convey

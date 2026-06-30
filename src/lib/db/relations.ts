@@ -4,6 +4,7 @@ import { users } from './schema/users';
 import { posts, postImages, postTags } from './schema/posts';
 import { works, workImages, workTags } from './schema/works';
 import { tags } from './schema/tags';
+import { categories } from './schema/categories';
 import { mediaAssets } from './schema/mediaAssets';
 import { mediaPairs } from './schema/mediaPairs';
 
@@ -43,6 +44,10 @@ export const postsRelations = relations(posts, ({ one, many }) => ({
     fields: [posts.coverMediaAssetId],
     references: [mediaAssets.id],
   }),
+  category: one(categories, {
+    fields: [posts.categoryId],
+    references: [categories.id],
+  }),
   images: many(postImages),
   postTags: many(postTags),
 }));
@@ -64,6 +69,10 @@ export const worksRelations = relations(works, ({ one, many }) => ({
   coverAsset: one(mediaAssets, {
     fields: [works.coverMediaAssetId],
     references: [mediaAssets.id],
+  }),
+  category: one(categories, {
+    fields: [works.categoryId],
+    references: [categories.id],
   }),
   images: many(workImages),
   workTags: many(workTags),
@@ -89,4 +98,9 @@ export const workTagsRelations = relations(workTags, ({ one }) => ({
 export const tagsRelations = relations(tags, ({ many }) => ({
   postTags: many(postTags),
   workTags: many(workTags),
+}));
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  posts: many(posts),
+  works: many(works),
 }));

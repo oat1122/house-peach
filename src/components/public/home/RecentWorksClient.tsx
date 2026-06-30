@@ -6,26 +6,20 @@ import { Stagger, StaggerItem } from '@/components/motion/Stagger';
 import { ShowcaseCard } from '@/components/public/home/ShowcaseCard';
 import type { WorkCardWork } from '@/components/public/work/WorkCard';
 import type { RoomType } from '@/lib/db/schema/works';
-import { labels } from '@/lib/i18n/labels';
 
 type ChipFilter = RoomType | 'all';
 
 type Chip = {
-  key:
-    | 'homeRoomChipAll'
-    | 'homeRoomChipLiving'
-    | 'homeRoomChipBedroom'
-    | 'homeRoomChipKitchen'
-    | 'homeRoomChipHouse';
+  label: string;
   filter: ChipFilter;
 };
 
 const CHIPS: readonly Chip[] = [
-  { key: 'homeRoomChipAll', filter: 'all' },
-  { key: 'homeRoomChipLiving', filter: 'living' },
-  { key: 'homeRoomChipBedroom', filter: 'bedroom' },
-  { key: 'homeRoomChipKitchen', filter: 'kitchen' },
-  { key: 'homeRoomChipHouse', filter: 'full_house' },
+  { label: 'ทั้งหมด', filter: 'all' },
+  { label: 'ห้องนั่งเล่น', filter: 'living' },
+  { label: 'ห้องนอน', filter: 'bedroom' },
+  { label: 'ครัว', filter: 'kitchen' },
+  { label: 'ทั้งบ้าน', filter: 'full_house' },
 ];
 
 const VISIBLE_COUNT = 4;
@@ -50,11 +44,10 @@ export function RecentWorksClient({ pool }: Props) {
         className="flex justify-center mb-8 overflow-x-auto"
       >
         <ul className="inline-flex bg-brand-card rounded-full p-1 gap-1 border border-line shadow-sm">
-          {CHIPS.map(({ key, filter }) => {
+          {CHIPS.map(({ label, filter }) => {
             const isActive = active === filter;
-            const label = labels[key];
             return (
-              <li key={key}>
+              <li key={filter}>
                 <button
                   type="button"
                   onClick={() => setActive(filter)}
@@ -65,7 +58,7 @@ export function RecentWorksClient({ pool }: Props) {
                       : 'inline-flex items-center min-h-[36px] px-4 py-1.5 rounded-full text-xs font-medium text-muted-brand hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2 transition-colors cursor-pointer'
                   }
                 >
-                  {label.th}
+                  {label}
                 </button>
               </li>
             );

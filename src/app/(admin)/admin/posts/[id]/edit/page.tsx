@@ -64,7 +64,7 @@ export default async function EditPostPage(props: {
     title: post.title,
     slug: post.slug as PostInsert['slug'],
     excerpt: post.excerpt,
-    bodyMdx: post.bodyMdx,
+    body: post.body,
     coverMediaAssetId: post.coverMediaAssetId ?? null,
     status: post.status,
     publishedAt: post.publishedAt ?? null,
