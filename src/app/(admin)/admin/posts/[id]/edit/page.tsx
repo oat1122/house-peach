@@ -7,6 +7,7 @@ import { db } from '@/lib/db';
 import { mediaAssets } from '@/lib/db/schema/mediaAssets';
 import { users } from '@/lib/db/schema/users';
 import { eq } from 'drizzle-orm';
+import { listCategoryOptions } from '@/lib/services/category';
 import { listMediaAssets } from '@/lib/services/media';
 import { getPostById, listPostTagOptions } from '@/lib/services/post';
 import type { PostInsert } from '@/lib/validation/post';
@@ -21,11 +22,13 @@ export default async function EditPostPage(props: {
   const numId = Number(id);
   if (!Number.isFinite(numId) || numId <= 0) notFound();
 
-  const [post, tagOptions, libraryAssetsRaw] = await Promise.all([
-    getPostById(numId),
-    listPostTagOptions(),
-    listMediaAssets({ limit: 500 }),
-  ]);
+  const [post, tagOptions, categoryOptions, libraryAssetsRaw] =
+    await Promise.all([
+      getPostById(numId),
+      listPostTagOptions(),
+      listCategoryOptions('post'),
+      listMediaAssets({ limit: 500 }),
+    ]);
   if (!post) notFound();
 
   // Resolve author display name + current cover asset in parallel — both are
@@ -66,6 +69,7 @@ export default async function EditPostPage(props: {
     excerpt: post.excerpt,
     body: post.body,
     coverMediaAssetId: post.coverMediaAssetId ?? null,
+    categoryId: post.categoryId ?? null,
     status: post.status,
     publishedAt: post.publishedAt ?? null,
     tagIds: post.tagIds,
@@ -89,6 +93,7 @@ export default async function EditPostPage(props: {
       mode="edit"
       defaultValues={defaultValues}
       tagOptions={tagOptions}
+      categoryOptions={categoryOptions}
       libraryAssets={libraryAssets}
       authorName={authorRow[0]?.name ?? null}
       coverAssetCache={coverRow[0] ?? null}

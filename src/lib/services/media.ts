@@ -5,9 +5,9 @@ import { db } from '@/lib/db';
 import { bumpTag, bumpWorkPaths, tags as cacheTags } from '@/lib/cache-tags';
 import { mediaAssets, type MediaAssetRow } from '@/lib/db/schema/mediaAssets';
 import { mediaPairs } from '@/lib/db/schema/mediaPairs';
-import { postImages } from '@/lib/db/schema/posts';
+import { postImages, posts } from '@/lib/db/schema/posts';
 import { users } from '@/lib/db/schema/users';
-import { workImages } from '@/lib/db/schema/works';
+import { workImages, works } from '@/lib/db/schema/works';
 import {
   deleteStoredImage,
   processAndStoreImage,
@@ -284,6 +284,82 @@ export async function updateMediaPairLabel(id: number, label: string) {
     .set({ label: label.slice(0, 180) })
     .where(eq(mediaPairs.id, id));
   bumpWorkPaths();
+}
+
+// ── Media asset detail queries ─────────────────────────────────────────────────
+
+/**
+ * Fetch a single media asset by id. Returns null when not found.
+ * Used by the admin media detail page.
+ */
+export async function getMediaAssetById(id: number): Promise<MediaAssetRow | null> {
+  const [row] = await db
+    .select()
+    .from(mediaAssets)
+    .where(eq(mediaAssets.id, id))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
+ * Content rows (posts + works) that reference a given media asset — either as
+ * a cover image or as a gallery attachment (post_images / work_images).
+ * Deduped by (kind, id) so a post that has the asset as both cover and gallery
+ * item only appears once.
+ */
+export type MediaAssetUsageItem = {
+  id: number;
+  kind: 'post' | 'work';
+  title: string;
+  slug: string;
+  status: string;
+};
+
+export async function listMediaAssetUsage(id: number): Promise<MediaAssetUsageItem[]> {
+  const [postCoverRows, postImageRows, workCoverRows, workImageRows] = await Promise.all([
+    db
+      .select({ id: posts.id, title: posts.title, slug: posts.slug, status: posts.status })
+      .from(posts)
+      .where(eq(posts.coverMediaAssetId, id))
+      .limit(50),
+    db
+      .select({ id: posts.id, title: posts.title, slug: posts.slug, status: posts.status })
+      .from(posts)
+      .innerJoin(postImages, eq(postImages.postId, posts.id))
+      .where(eq(postImages.mediaAssetId, id))
+      .limit(50),
+    db
+      .select({ id: works.id, title: works.title, slug: works.slug, status: works.status })
+      .from(works)
+      .where(eq(works.coverMediaAssetId, id))
+      .limit(50),
+    db
+      .select({ id: works.id, title: works.title, slug: works.slug, status: works.status })
+      .from(works)
+      .innerJoin(workImages, eq(workImages.workId, works.id))
+      .where(eq(workImages.mediaAssetId, id))
+      .limit(50),
+  ]);
+
+  const seen = new Set<string>();
+  const result: MediaAssetUsageItem[] = [];
+
+  const add = (
+    row: { id: number; title: string; slug: string; status: string },
+    kind: 'post' | 'work',
+  ) => {
+    const key = `${kind}:${row.id}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push({ ...row, kind });
+  };
+
+  for (const row of postCoverRows) add(row, 'post');
+  for (const row of postImageRows) add(row, 'post');
+  for (const row of workCoverRows) add(row, 'work');
+  for (const row of workImageRows) add(row, 'work');
+
+  return result;
 }
 
 export async function deleteMediaPair(id: number) {

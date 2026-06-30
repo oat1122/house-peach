@@ -1,8 +1,10 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { Pencil, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,37 +95,44 @@ export function MediaAssetCard({
     <li
       className={[
         'group relative overflow-hidden rounded-xl border bg-brand-card transition',
-        selected ? 'border-brand-accent ring-2 ring-brand-accent/40' : 'border-line',
+        selected
+          ? 'border-brand-accent ring-2 ring-brand-accent/40'
+          : 'border-line hover:border-brand-accent/40',
       ].join(' ')}
     >
+      {/* Select toggle (pair-select mode checkbox) */}
       <button
         type="button"
         onClick={onToggleSelect}
         aria-pressed={selected}
         aria-label={selected ? 'ยกเลิกเลือกรูป' : 'เลือกรูป'}
-        className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-line bg-bg/90 text-xs shadow-sm"
+        className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-line bg-bg/90 text-xs shadow-sm transition hover:border-brand-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
       >
         {selected ? '✓' : ''}
       </button>
 
       {pairRole && (
         <span className="absolute right-2 top-2 z-10 rounded-full bg-ink/85 px-2 py-0.5 text-[10px] uppercase tracking-wider text-bg">
-          {pairRole}
+          {pairRole === 'before' ? 'ก่อน' : 'หลัง'}
         </span>
       )}
 
-      <div className="relative aspect-[4/3] bg-bg2">
-        <Image
-          src={asset.path}
-          alt={asset.alt || asset.title || 'media asset'}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-cover"
-          priority={priority}
-          unoptimized
-        />
-      </div>
+      {/* Thumbnail — links to detail page */}
+      <Link href={`/admin/media/${asset.id}`} className="block">
+        <div className="relative h-[140px] bg-bg2">
+          <Image
+            src={asset.path}
+            alt={asset.alt || asset.title || 'media asset'}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover transition group-hover:opacity-95"
+            priority={priority}
+            unoptimized
+          />
+        </div>
+      </Link>
 
+      {/* Info & actions */}
       <div className="space-y-2 p-3">
         {editing ? (
           <div className="space-y-1.5">
@@ -132,14 +141,14 @@ export function MediaAssetCard({
               maxLength={180}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="ชื่อรูป"
-              className="h-7 text-xs"
+              className="h-7 rounded-lg text-xs"
             />
             <Input
               value={alt}
               maxLength={255}
               onChange={(e) => setAlt(e.target.value)}
               placeholder="alt text (สำหรับ SEO + screen reader)"
-              className="h-7 text-xs"
+              className="h-7 rounded-lg text-xs"
             />
             <div className="flex gap-1.5">
               <Button size="xs" onClick={handleSave} disabled={pending}>
@@ -160,50 +169,48 @@ export function MediaAssetCard({
             </div>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="block w-full space-y-0.5 text-left"
-          >
-            <span className="block truncate text-sm text-ink">
-              {asset.title || <em className="text-muted-brand">(ตั้งชื่อรูป)</em>}
-            </span>
-            <span
-              className="block truncate text-[11px] text-muted-brand"
+          <div className="space-y-0.5">
+            <p className="truncate text-sm font-medium text-ink">
+              {asset.title || <em className="font-normal text-muted-brand">(ตั้งชื่อรูป)</em>}
+            </p>
+            <p className="text-[10.5px] text-muted-brand">
+              {asset.width}×{asset.height} px
+            </p>
+            <p
+              className="truncate text-[10.5px] text-muted-brand"
               title={asset.alt}
             >
               {asset.alt || '— ยังไม่มี alt —'}
-            </span>
-          </button>
+            </p>
+          </div>
         )}
 
-        <div className="flex items-center justify-between text-[10px] text-muted-brand">
-          <span>
-            {asset.width}×{asset.height}
-          </span>
-          <span>
-            ใช้ใน {asset.postCount} posts · {asset.workCount} works
-          </span>
-        </div>
-
         {!editing && (
-          <Button
-            size="xs"
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={pending}
-            aria-busy={pending}
-            className="w-full"
-          >
-            {pending ? (
-              <>
-                <Spinner className="size-3" />
-                <span>กำลังลบ…</span>
-              </>
-            ) : (
-              'ลบ'
-            )}
-          </Button>
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] text-muted-brand">
+              ใช้ใน {asset.postCount} posts · {asset.workCount} works
+            </span>
+            <div className="flex gap-0.5">
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                aria-label="แก้ไขชื่อและ alt"
+                className="grid h-7 w-7 place-items-center rounded-md text-muted-brand transition hover:bg-bg2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
+              >
+                <Pencil size={13} aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={pending}
+                aria-label="ลบรูป"
+                aria-busy={pending}
+                className="grid h-7 w-7 place-items-center rounded-md text-muted-brand transition hover:bg-danger/10 hover:text-danger disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50"
+              >
+                {pending ? <Spinner className="size-3" /> : <Trash2 size={13} aria-hidden />}
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </li>

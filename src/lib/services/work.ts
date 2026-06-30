@@ -153,6 +153,7 @@ export async function createWork(input: WorkInsert): Promise<number> {
         areaSqm: input.areaSqm != null ? String(input.areaSqm) : null,
         budgetRange: input.budgetRange ?? null,
         coverMediaAssetId: input.coverMediaAssetId ?? null,
+        categoryId: input.categoryId ?? null,
         tone: input.tone,
         accent: input.accent,
         status: input.status,
@@ -208,6 +209,8 @@ export async function updateWork(input: WorkUpdate): Promise<void> {
       set.areaSqm = input.areaSqm != null ? String(input.areaSqm) : null;
     if (input.budgetRange !== undefined)
       set.budgetRange = input.budgetRange ?? null;
+    if (input.categoryId !== undefined)
+      set.categoryId = input.categoryId ?? null;
     // NOTE: `coverMediaAssetId` is intentionally NOT settable via updateWork.
     // Cover selection is owned by setWorkCover() / the Gallery editor —
     // routing it through the form payload caused the form save to clobber
@@ -277,6 +280,27 @@ export async function deleteWork(id: number): Promise<void> {
   // FK ON DELETE CASCADE cleans work_images / work_tags / media_pairs links.
   await db.delete(works).where(eq(works.id, id));
   bumpWorkById(id);
+}
+
+/** Bulk status change in one UPDATE, then per-row cache bust. */
+export async function bulkSetWorkStatus(
+  ids: number[],
+  status: 'draft' | 'published' | 'archived',
+): Promise<void> {
+  if (ids.length === 0) return;
+  const set: Record<string, unknown> = { status };
+  if (status === 'published') {
+    set.publishedAt = sql`COALESCE(${works.publishedAt}, NOW())`;
+  }
+  await db.update(works).set(set).where(inArray(works.id, ids));
+  for (const id of ids) bumpWorkById(id);
+}
+
+/** Bulk hard delete (FK CASCADE cleans junctions), then per-row cache bust. */
+export async function bulkDeleteWorks(ids: number[]): Promise<void> {
+  if (ids.length === 0) return;
+  await db.delete(works).where(inArray(works.id, ids));
+  for (const id of ids) bumpWorkById(id);
 }
 
 async function ensureTagsExist(

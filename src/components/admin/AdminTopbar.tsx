@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { ExternalLink } from 'lucide-react';
 
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { Separator } from '@/components/ui/separator';
@@ -15,6 +16,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   admin: 'แดชบอร์ด',
   posts: 'บทความ',
   works: 'ผลงาน',
+  categories: 'หมวดหมู่',
   tags: 'แท็ก',
   media: 'มีเดีย',
   inquiries: 'ติดต่อ',
@@ -61,8 +63,17 @@ export function AdminTopbar({ children }: { children?: React.ReactNode }) {
           ))}
         </ol>
       </nav>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         {children}
+        <a
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-brand-card px-3 py-1.5 text-xs text-muted-brand transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
+        >
+          <ExternalLink className="size-3.5" aria-hidden />
+          <span className="hidden sm:inline">ดูเว็บไซต์</span>
+        </a>
         <ThemeToggle />
       </div>
     </header>

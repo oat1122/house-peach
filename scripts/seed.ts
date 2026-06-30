@@ -88,6 +88,7 @@ const POSTS = [
   },
   {
     slug: 'warm-minimalist-living-room',
+    categorySlug: 'inspiration',
     title: 'Warm Minimalist Living Room — จะอบอุ่นแต่ไม่รก ทำได้',
     excerpt:
       'minimalism ไม่ได้แปลว่าเย็นชา — เลือกพรม wool หนา ๆ, sofa สีเบจ, และไม้ทอนสี เพื่อให้ห้องดูเรียบแต่อบอุ่นรับลูกค้าได้',
@@ -99,6 +100,7 @@ const POSTS = [
   },
   {
     slug: 'choose-warm-paint-color',
+    categorySlug: 'how-to',
     title: 'วิธีเลือกสีทาผนังโทนอุ่นที่ไม่ยาก',
     excerpt:
       'การเลือกสีทาผนังโทนอุ่นที่เข้ากับห้องในไทยมีรายละเอียดมากกว่าที่คิด — undertone, ทิศของแสง และพื้นที่จริง',
@@ -113,6 +115,7 @@ const POSTS = [
 const WORKS = [
   {
     slug: 'minimal-japandi-bedroom-bkk',
+    categorySlug: 'case-study',
     title: 'Japandi Bedroom — คอนโดย่านอารีย์',
     summary:
       'คอนโด 32 ตร.ม. รีโนเวทห้องนอนหลักให้เป็น sanctuary ส่วนตัวสไตล์ Japandi โทนอุ่น',
@@ -130,6 +133,7 @@ const WORKS = [
   },
   {
     slug: 'warm-living-room-thonglor',
+    categorySlug: 'case-study',
     title: 'Warm Living Room — บ้านทาวน์โฮม ทองหล่อ',
     summary:
       'รีโนเวทห้องนั่งเล่นทาวน์โฮม 3 ชั้นให้เป็น warm minimalist สำหรับครอบครัวเล็ก',
@@ -147,6 +151,7 @@ const WORKS = [
   },
   {
     slug: 'kitchen-makeover-chiangmai',
+    categorySlug: 'case-study',
     title: 'Kitchen Makeover — บ้านเดี่ยว เชียงใหม่',
     summary:
       'รีโนเวทครัวขนาด 16 ตร.ม. ในเชียงใหม่ ให้รับแสงธรรมชาติเต็มที่',
@@ -206,7 +211,39 @@ async function upsertTags() {
   return new Map(rows.map((r) => [r.slug, r.id]));
 }
 
-async function seedPosts(authorId: number, tagIdBySlug: Map<string, number>) {
+async function upsertCategories() {
+  for (const c of SEED_CATEGORIES) {
+    const [existing] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(eq(categories.slug, c.slug))
+      .limit(1);
+    if (existing) {
+      await db
+        .update(categories)
+        .set({ name: c.name, kind: c.kind, color: c.color, summary: c.summary })
+        .where(eq(categories.id, existing.id));
+    } else {
+      await db.insert(categories).values(c);
+    }
+  }
+  const rows = await db
+    .select({ id: categories.id, slug: categories.slug })
+    .from(categories)
+    .where(
+      inArray(
+        categories.slug,
+        SEED_CATEGORIES.map((c) => c.slug),
+      ),
+    );
+  return new Map(rows.map((r) => [r.slug, r.id]));
+}
+
+async function seedPosts(
+  authorId: number,
+  tagIdBySlug: Map<string, number>,
+  categoryIdBySlug: Map<string, number>,
+) {
   for (const p of POSTS) {
     const [existing] = await db
       .select({ id: posts.id })
@@ -226,6 +263,7 @@ async function seedPosts(authorId: number, tagIdBySlug: Map<string, number>) {
         status: p.status,
         publishedAt: new Date(),
         authorId,
+        categoryId: categoryIdBySlug.get(p.categorySlug),
         readingTimeMin: readingTime(tiptapToText(p.body)),
       });
       const postId = (result as unknown as { insertId?: number }[])[0]?.insertId;
@@ -244,7 +282,10 @@ async function seedPosts(authorId: number, tagIdBySlug: Map<string, number>) {
   }
 }
 
-async function seedWorks(tagIdBySlug: Map<string, number>) {
+async function seedWorks(
+  tagIdBySlug: Map<string, number>,
+  categoryIdBySlug: Map<string, number>,
+) {
   for (const w of WORKS) {
     const [existing] = await db
       .select({ id: works.id })
@@ -271,6 +312,7 @@ async function seedWorks(tagIdBySlug: Map<string, number>) {
         accent: w.accent,
         status: w.status,
         publishedAt: new Date(),
+        categoryId: categoryIdBySlug.get(w.categorySlug),
       });
       const workId = (result as unknown as { insertId?: number }[])[0]?.insertId;
       if (!workId) throw new Error(`failed to insert work ${w.slug}`);
@@ -292,8 +334,10 @@ async function main() {
   const authorId = await ensureAdmin();
   const tagIdBySlug = await upsertTags();
   console.log(`tags ready (${tagIdBySlug.size})`);
-  await seedPosts(authorId, tagIdBySlug);
-  await seedWorks(tagIdBySlug);
+  const categoryIdBySlug = await upsertCategories();
+  console.log(`categories ready (${categoryIdBySlug.size})`);
+  await seedPosts(authorId, tagIdBySlug, categoryIdBySlug);
+  await seedWorks(tagIdBySlug, categoryIdBySlug);
 
   // Quiet usage hints — silence unused imports until media seeding is added.
   void mediaAssets;

@@ -5,6 +5,8 @@ import { z } from 'zod';
 
 import { requireRole } from '@/lib/auth-guard';
 import {
+  bulkDeleteWorks as bulkDeleteWorksSvc,
+  bulkSetWorkStatus as bulkSetWorkStatusSvc,
   createWork as createWorkSvc,
   deleteWork as deleteWorkSvc,
   setWorkStatus as setWorkStatusSvc,
@@ -105,6 +107,32 @@ export async function deleteWorkAction(input: unknown): Promise<ActionResult> {
   if (blocked) return blocked;
   const { id } = z.object({ id: Id }).parse(input);
   await deleteWorkSvc(id);
+  return { ok: true };
+}
+
+const BulkIds = z.array(Id).min(1).max(100);
+const BulkStatusInput = z.object({ ids: BulkIds, status: StatusEnum });
+const BulkIdsInput = z.object({ ids: BulkIds });
+
+export async function bulkSetWorkStatusAction(
+  input: unknown,
+): Promise<ActionResult> {
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
+  const { ids, status } = BulkStatusInput.parse(input);
+  await bulkSetWorkStatusSvc(ids, status);
+  return { ok: true };
+}
+
+export async function bulkDeleteWorksAction(
+  input: unknown,
+): Promise<ActionResult> {
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
+  const { ids } = BulkIdsInput.parse(input);
+  await bulkDeleteWorksSvc(ids);
   return { ok: true };
 }
 

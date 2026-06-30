@@ -10,6 +10,7 @@ import type {
   PickerAsset,
   PickerPair,
 } from '@/components/admin/media/MediaPicker';
+import { listCategoryOptions } from '@/lib/services/category';
 import { listMediaAssets, listMediaPairs } from '@/lib/services/media';
 import { listWorkImages } from '@/lib/services/workImage';
 import { getWorkById, listWorkTagOptions } from '@/lib/services/work';
@@ -25,14 +26,21 @@ export default async function EditWorkPage(props: {
   const numId = Number(id);
   if (!Number.isFinite(numId) || numId <= 0) notFound();
 
-  const [work, tagOptions, galleryRowsRaw, libraryAssetsRaw, libraryPairsRaw] =
-    await Promise.all([
-      getWorkById(numId),
-      listWorkTagOptions(),
-      listWorkImages(numId),
-      listMediaAssets({ limit: 500 }),
-      listMediaPairs(500),
-    ]);
+  const [
+    work,
+    tagOptions,
+    categoryOptions,
+    galleryRowsRaw,
+    libraryAssetsRaw,
+    libraryPairsRaw,
+  ] = await Promise.all([
+    getWorkById(numId),
+    listWorkTagOptions(),
+    listCategoryOptions('work'),
+    listWorkImages(numId),
+    listMediaAssets({ limit: 500 }),
+    listMediaPairs(500),
+  ]);
   if (!work) notFound();
 
   // Map DB row → WorkInsert-shaped defaults. `areaSqm` is varchar in DB
@@ -50,6 +58,7 @@ export default async function EditWorkPage(props: {
     areaSqm: work.areaSqm != null ? Number(work.areaSqm) : null,
     budgetRange: work.budgetRange ?? null,
     coverMediaAssetId: work.coverMediaAssetId ?? null,
+    categoryId: work.categoryId ?? null,
     tone: work.tone as WorkInsert['tone'],
     accent: work.accent as WorkInsert['accent'],
     tagIds: work.tagIds,
@@ -106,6 +115,7 @@ export default async function EditWorkPage(props: {
       mode="edit"
       defaultValues={defaultValues}
       tagOptions={tagOptions}
+      categoryOptions={categoryOptions}
       slotRight={
         <WorkGalleryEditor
           workId={work.id}

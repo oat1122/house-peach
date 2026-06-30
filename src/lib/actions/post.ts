@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 import { requireRole } from '@/lib/auth-guard';
 import {
+  bulkDeletePosts as bulkDeletePostsSvc,
+  bulkSetPostStatus as bulkSetPostStatusSvc,
   createPost as createPostSvc,
   deletePost as deletePostSvc,
   PostSlugTakenError,
@@ -108,5 +110,31 @@ export async function deletePostAction(input: unknown): Promise<ActionResult> {
   if (blocked) return blocked;
   const { id } = z.object({ id: Id }).parse(input);
   await deletePostSvc(id);
+  return { ok: true };
+}
+
+const BulkIds = z.array(Id).min(1).max(100);
+const BulkStatusInput = z.object({ ids: BulkIds, status: StatusEnum });
+const BulkIdsInput = z.object({ ids: BulkIds });
+
+export async function bulkSetPostStatusAction(
+  input: unknown,
+): Promise<ActionResult> {
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
+  const { ids, status } = BulkStatusInput.parse(input);
+  await bulkSetPostStatusSvc(ids, status);
+  return { ok: true };
+}
+
+export async function bulkDeletePostsAction(
+  input: unknown,
+): Promise<ActionResult> {
+  const { session } = await requireRole();
+  const blocked = checkAdminWriteRateLimit(session?.user?.id);
+  if (blocked) return blocked;
+  const { ids } = BulkIdsInput.parse(input);
+  await bulkDeletePostsSvc(ids);
   return { ok: true };
 }

@@ -104,80 +104,94 @@ export function MediaLibrary({
   };
 
   return (
-    <section className="w-full space-y-6 px-4 py-6 lg:px-6 lg:py-8">
+    <section className="w-full space-y-5 px-4 py-6 lg:px-6 lg:py-8">
+      {/* Header */}
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink">มีเดีย library</h1>
+          <h1 className="font-serif text-3xl font-bold text-ink">มีเดีย library</h1>
           <p className="mt-1 text-sm text-muted-brand">
             อัปโหลดรูปเก็บไว้ก่อน · ค่อยเอาไปใช้ใน post / work ทีหลัง
           </p>
         </div>
-        <Button size="lg" onClick={() => setUploadOpen(true)}>
-          + อัปโหลดรูป
-        </Button>
+        <button
+          type="button"
+          onClick={() => setUploadOpen(true)}
+          className="rounded-xl bg-ink px-5 py-2.5 text-sm font-medium text-bg transition hover:bg-ink/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent focus-visible:ring-offset-2"
+        >
+          + อัปโหลดภาพ
+        </button>
       </header>
 
-      <form action="/admin/media" method="get" className="max-w-xl">
-        {tab === 'pairs' && <input type="hidden" name="tab" value="pairs" />}
-        <InputGroup>
-          <InputGroupAddon align="inline-start">
-            <Search aria-hidden />
-          </InputGroupAddon>
-          <InputGroupInput
-            name="q"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="ค้นหา title / alt"
-            aria-label="ค้นหารูป"
-          />
-          {searchValue && (
+      {/* Tabs + Search row */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Pill tab track */}
+        <nav
+          className="flex gap-1 rounded-xl bg-bg2 p-1"
+          aria-label="หมวดหมู่ library"
+        >
+          <TabButton
+            active={tab === 'assets'}
+            onClick={() => setQuery({ tab: null })}
+          >
+            คลังภาพ · {assets.length}
+          </TabButton>
+          <TabButton
+            active={tab === 'pairs'}
+            onClick={() => setQuery({ tab: 'pairs' })}
+          >
+            ก่อน–หลัง · {pairs.length}
+          </TabButton>
+        </nav>
+
+        {/* Search */}
+        <form action="/admin/media" method="get" className="flex-1 min-w-48 max-w-xl">
+          {tab === 'pairs' && <input type="hidden" name="tab" value="pairs" />}
+          <InputGroup className="rounded-xl border-line bg-brand-card">
+            <InputGroupAddon align="inline-start">
+              <Search aria-hidden className="size-4 text-muted-brand" />
+            </InputGroupAddon>
+            <InputGroupInput
+              name="q"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="ค้นหา title / alt"
+              aria-label="ค้นหารูป"
+            />
+            {searchValue && (
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setQuery({ q: null })}
+                  aria-label="ล้างคำค้น"
+                >
+                  <X />
+                </InputGroupButton>
+              </InputGroupAddon>
+            )}
             <InputGroupAddon align="inline-end">
-              <InputGroupButton
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => setQuery({ q: null })}
-                aria-label="ล้างคำค้น"
-              >
-                <X />
+              <InputGroupButton type="submit" variant="default">
+                ค้นหา
               </InputGroupButton>
             </InputGroupAddon>
-          )}
-          <InputGroupAddon align="inline-end">
-            <InputGroupButton type="submit" variant="default">
-              ค้นหา
-            </InputGroupButton>
-          </InputGroupAddon>
-        </InputGroup>
-      </form>
-
-      <nav className="flex gap-1 border-b border-line" aria-label="หมวดหมู่ library">
-        <TabButton
-          active={tab === 'assets'}
-          onClick={() => setQuery({ tab: null })}
-        >
-          ภาพทั้งหมด ({assets.length})
-        </TabButton>
-        <TabButton
-          active={tab === 'pairs'}
-          onClick={() => setQuery({ tab: 'pairs' })}
-        >
-          Pairs ({pairs.length})
-        </TabButton>
-      </nav>
+          </InputGroup>
+        </form>
+      </div>
 
       {tab === 'assets' ? (
         <>
+          {/* Pair-mode bar */}
           {selectedIds.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-brand-accent/40 bg-brand-accent/10 px-3 py-2">
-              <span className="text-sm text-ink">
-                เลือกแล้ว {selectedIds.length}/2
+            <div className="flex flex-wrap items-center gap-3 rounded-xl bg-ink px-4 py-3">
+              <span className="text-sm font-medium text-bg">
+                เลือกภาพ ก่อน แล้ว หลัง ({selectedIds.length}/2)
               </span>
               <Input
                 value={pairLabel}
                 onChange={(e) => setPairLabel(e.target.value)}
                 placeholder="ป้าย pair (ไม่จำเป็น)"
-                className="h-7 grow text-xs"
+                className="h-8 grow border-bg/20 bg-white/10 text-xs text-bg placeholder:text-bg/50 focus-visible:ring-brand-accent/60"
                 maxLength={180}
                 disabled={pairing}
               />
@@ -186,6 +200,7 @@ export function MediaLibrary({
                 onClick={createPair}
                 disabled={selectedIds.length !== 2 || pairing}
                 aria-busy={pairing}
+                className="rounded-lg border-none bg-brand-card text-ink hover:bg-brand-card/90"
               >
                 {pairing ? (
                   <>
@@ -193,7 +208,7 @@ export function MediaLibrary({
                     <span>กำลังจับคู่…</span>
                   </>
                 ) : (
-                  'จับคู่ before/after'
+                  'สร้างคู่'
                 )}
               </Button>
               <Button
@@ -201,16 +216,17 @@ export function MediaLibrary({
                 variant="ghost"
                 onClick={clearSelection}
                 disabled={pairing}
+                className="text-bg/80 hover:bg-white/10 hover:text-bg"
               >
                 ล้าง
               </Button>
               {pairError && (
-                <p className="basis-full text-xs text-destructive" role="alert">
+                <p className="basis-full text-xs text-danger" role="alert">
                   {pairError}
                 </p>
               )}
               {selectedIds.length === 2 && (
-                <p className="basis-full text-[11px] text-muted-brand">
+                <p className="basis-full text-[11px] text-bg/65">
                   ไฟล์แรกที่เลือก = before · ไฟล์สอง = after
                 </p>
               )}
@@ -218,9 +234,9 @@ export function MediaLibrary({
           )}
 
           {assets.length === 0 ? (
-            <EmptyState message="ยังไม่มีรูปใน library — กดปุ่ม 'อัปโหลดรูป' เพื่อเริ่ม" />
+            <EmptyState message="ยังไม่มีรูปใน library — กดปุ่ม 'อัปโหลดภาพ' เพื่อเริ่ม" />
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(186px,1fr))] gap-3.5">
               {assets.map((a, i) => (
                 <MediaAssetCard
                   key={a.id}
@@ -236,9 +252,9 @@ export function MediaLibrary({
       ) : (
         <>
           {pairs.length === 0 ? (
-            <EmptyState message="ยังไม่มี pair — เลือกรูป 2 ใบในแท็บ 'ภาพทั้งหมด' แล้วกด 'จับคู่' หรืออัปโหลดในโหมด pair" />
+            <EmptyState message="ยังไม่มี pair — เลือกรูป 2 ใบในแท็บ 'คลังภาพ' แล้วกด 'สร้างคู่' หรืออัปโหลดในโหมด pair" />
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-3.5">
               {pairs.map((p, i) => (
                 <MediaPairCard key={p.id} pair={p} priority={i === 0} />
               ))}
@@ -267,10 +283,10 @@ function TabButton({
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
       className={[
-        '-mb-px border-b-2 px-3 py-2 text-sm transition',
+        'rounded-lg px-4 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent',
         active
-          ? 'border-brand-accent text-ink'
-          : 'border-transparent text-muted-brand hover:text-ink',
+          ? 'bg-brand-card text-ink shadow-sm'
+          : 'text-muted-brand hover:text-ink',
       ].join(' ')}
     >
       {children}
@@ -280,7 +296,7 @@ function TabButton({
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <p className="rounded-md border border-dashed border-line bg-bg2/40 px-3 py-12 text-center text-sm text-muted-brand">
+    <p className="rounded-xl border border-dashed border-line bg-bg2/40 px-3 py-12 text-center text-sm text-muted-brand">
       {message}
     </p>
   );

@@ -100,6 +100,7 @@ export function WorkForm({
   mode,
   defaultValues,
   tagOptions,
+  categoryOptions,
   slotRight,
 }: {
   mode: 'new' | 'edit';
@@ -110,6 +111,7 @@ export function WorkForm({
    *  stays visible while the admin scrolls form sections. */
   slotRight?: React.ReactNode;
   tagOptions: TagOption[];
+  categoryOptions: { id: number; name: string }[];
 }) {
   const router = useRouter();
   const confirm = useConfirm();
@@ -130,6 +132,7 @@ export function WorkForm({
     areaSqm: defaultValues?.areaSqm ?? null,
     budgetRange: defaultValues?.budgetRange ?? null,
     coverMediaAssetId: defaultValues?.coverMediaAssetId ?? null,
+    categoryId: defaultValues?.categoryId ?? null,
     tone: (defaultValues?.tone ?? '#f5d6c0') as WorkInsert['tone'],
     accent: (defaultValues?.accent ?? '#a87856') as WorkInsert['accent'],
     tagIds: defaultValues?.tagIds ?? [],
@@ -530,6 +533,56 @@ export function WorkForm({
                 );
               })}
             </div>
+          )}
+        </Section>
+
+        <Section title="หมวดหมู่">
+          {categoryOptions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              ยังไม่มีหมวดหมู่สำหรับผลงาน — เพิ่มจาก{' '}
+              <a href="/admin/categories" className="underline">
+                /admin/categories
+              </a>
+            </p>
+          ) : (
+            <Field
+              id="categoryId"
+              label="เลือกได้ 1 หมวด (ไม่บังคับ)"
+              error={errors.categoryId?.message}
+            >
+              <Controller
+                control={control}
+                name="categoryId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value == null ? 'none' : String(field.value)}
+                    onValueChange={(v) =>
+                      field.onChange(v === 'none' ? null : Number(v))
+                    }
+                  >
+                    <SelectTrigger id="categoryId" aria-label="หมวดหมู่">
+                      <SelectValue placeholder="เลือกหมวดหมู่">
+                        {(v) => {
+                          if (!v || v === 'none') return '— ไม่มีหมวดหมู่ —';
+                          return (
+                            categoryOptions.find((c) => String(c.id) === v)
+                              ?.name ?? 'เลือกหมวดหมู่'
+                          );
+                        }}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— ไม่มีหมวดหมู่ —</SelectItem>
+                      {categoryOptions.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </Field>
           )}
         </Section>
 

@@ -12,6 +12,7 @@ export const PostInsert = z.object({
   body: TiptapBody('เนื้อหายังสั้นเกินไป'),
   tagIds: z.array(z.coerce.number().int().positive()).default([]),
   coverMediaAssetId: z.coerce.number().int().positive().nullable().default(null),
+  categoryId: z.coerce.number().int().positive().nullable().default(null),
   status: z.enum(contentStatuses).default('draft'),
   publishedAt: z.coerce.date().nullable().optional(),
 });

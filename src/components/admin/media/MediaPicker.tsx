@@ -105,26 +105,26 @@ export function MediaPicker({
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/40 p-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/55 p-4 backdrop-blur-sm"
     >
-      <div className="flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-card shadow-xl">
-        <header className="flex items-start justify-between gap-3 border-b border-border px-5 py-3">
+      <div className="flex max-h-full w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-line bg-bg shadow-xl">
+        <header className="flex items-start justify-between gap-3 border-b border-line px-5 py-3">
           <div>
-            <h2 className="text-base font-medium text-foreground">{title}</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+            <h2 className="text-base font-medium text-ink">{title}</h2>
+            <p className="mt-0.5 text-xs text-muted-brand">{subtitle}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="ปิด"
-            className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+            className="rounded-lg p-1.5 text-muted-brand transition hover:bg-bg2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
           >
             ✕
           </button>
         </header>
 
-        <div className="border-b border-border p-4">
-          <InputGroup>
+        <div className="border-b border-line p-4">
+          <InputGroup className="rounded-xl border-line bg-brand-card">
             <InputGroupAddon align="inline-start">
               <Search aria-hidden />
             </InputGroupAddon>
@@ -144,7 +144,7 @@ export function MediaPicker({
                   type="button"
                   onClick={() => setQuery('')}
                   aria-label="ล้างคำค้น"
-                  className="grid size-5 place-items-center rounded text-muted-foreground hover:text-foreground"
+                  className="grid size-5 place-items-center rounded text-muted-brand hover:text-ink"
                 >
                   <X className="size-3.5" />
                 </button>
@@ -171,20 +171,22 @@ export function MediaPicker({
         </div>
 
         {mode === 'assets' && (
-          <footer className="flex items-center justify-between gap-2 border-t border-border bg-muted/30 px-5 py-3">
-            <span className="text-xs text-muted-foreground">
+          <footer className="flex items-center justify-between gap-2 border-t border-line bg-bg2/20 px-5 py-3">
+            <span className="text-xs text-muted-brand">
               เลือกแล้ว {selectedAssetIds.length} รายการ
             </span>
             <div className="flex gap-2">
               <Button variant="ghost" onClick={onClose}>
                 ยกเลิก
               </Button>
-              <Button
+              <button
+                type="button"
                 onClick={handleConfirmAssets}
                 disabled={selectedAssetIds.length === 0}
+                className="inline-flex items-center gap-2 rounded-xl bg-ink px-5 py-2 text-sm font-medium text-bg transition hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
               >
                 เพิ่ม
-              </Button>
+              </button>
             </div>
           </footer>
         )}
@@ -228,7 +230,7 @@ function AssetsGrid({
 }) {
   if (assets.length === 0) {
     return (
-      <p className="rounded-md border border-dashed border-border bg-muted/40 px-3 py-12 text-center text-sm text-muted-foreground">
+      <p className="rounded-xl border border-dashed border-line bg-bg2/40 px-3 py-12 text-center text-sm text-muted-brand">
         ไม่พบรูปที่ตรงกับคำค้น
       </p>
     );
@@ -247,13 +249,13 @@ function AssetsGrid({
               aria-pressed={isSelected}
               aria-label={`${a.title || a.alt || 'รูป'}${isExcluded ? ' (ผูกแล้ว)' : ''}`}
               className={
-                'group relative block w-full overflow-hidden rounded-lg border-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 ' +
+                'group relative block w-full overflow-hidden rounded-xl border-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent disabled:cursor-not-allowed disabled:opacity-40 ' +
                 (isSelected
-                  ? 'border-foreground'
-                  : 'border-transparent hover:border-border')
+                  ? 'border-ink'
+                  : 'border-transparent hover:border-line')
               }
             >
-              <div className="relative aspect-[4/3] bg-muted">
+              <div className="relative aspect-[4/3] bg-bg2">
                 <Image
                   src={a.path}
                   alt={a.alt || a.title || 'asset'}
@@ -263,17 +265,17 @@ function AssetsGrid({
                   unoptimized
                 />
                 {isSelected && (
-                  <span className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-foreground text-xs text-background">
+                  <span className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-ink text-xs text-bg">
                     ✓
                   </span>
                 )}
                 {isExcluded && (
-                  <span className="absolute left-1.5 top-1.5 rounded bg-foreground/85 px-1.5 py-0.5 text-[10px] text-background">
+                  <span className="absolute left-1.5 top-1.5 rounded-md bg-ink/85 px-1.5 py-0.5 text-[10px] text-bg">
                     ผูกแล้ว
                   </span>
                 )}
               </div>
-              <p className="truncate px-2 pb-1.5 pt-1 text-xs text-foreground">
+              <p className="truncate px-2 pb-1.5 pt-1 text-xs text-ink">
                 {a.title || a.alt || '—'}
               </p>
             </button>
@@ -295,7 +297,7 @@ function PairsGrid({
 }) {
   if (pairs.length === 0) {
     return (
-      <p className="rounded-md border border-dashed border-border bg-muted/40 px-3 py-12 text-center text-sm text-muted-foreground">
+      <p className="rounded-xl border border-dashed border-line bg-bg2/40 px-3 py-12 text-center text-sm text-muted-brand">
         ไม่พบ pair — สร้างจาก /admin/media ก่อน
       </p>
     );
@@ -311,18 +313,18 @@ function PairsGrid({
               disabled={isExcluded}
               onClick={() => onPick(p.id)}
               aria-label={`เลือก pair ${p.label || `#${p.id}`}${isExcluded ? ' (ผูกแล้ว)' : ''}`}
-              className="group block w-full overflow-hidden rounded-lg border border-border bg-card text-left transition hover:border-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40"
+              className="group block w-full overflow-hidden rounded-xl border border-line bg-brand-card text-left transition hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <div className="grid grid-cols-2 gap-px bg-border">
+              <div className="grid grid-cols-2 gap-px bg-line">
                 <PairThumb side="before" path={p.before.path} alt={p.before.alt} />
                 <PairThumb side="after" path={p.after.path} alt={p.after.alt} />
               </div>
-              <p className="truncate px-3 py-2 text-xs text-foreground">
+              <p className="truncate px-3 py-2 text-xs text-ink">
                 {p.label || (
-                  <em className="text-muted-foreground">— ไม่มีป้าย —</em>
+                  <em className="text-muted-brand">— ไม่มีป้าย —</em>
                 )}
                 {isExcluded && (
-                  <span className="ml-2 text-[10px] text-muted-foreground">
+                  <span className="ml-2 text-[10px] text-muted-brand">
                     (ผูกแล้ว)
                   </span>
                 )}
@@ -345,9 +347,9 @@ function PairThumb({
   alt: string;
 }) {
   return (
-    <div className="relative aspect-[4/3] bg-muted">
+    <div className="relative aspect-[4/3] bg-bg2">
       <Image src={path} alt={alt} fill sizes="25vw" className="object-cover" unoptimized />
-      <span className="absolute left-1 top-1 rounded bg-foreground/85 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-background">
+      <span className="absolute left-1 top-1 rounded-md bg-ink/85 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-bg">
         {side}
       </span>
     </div>

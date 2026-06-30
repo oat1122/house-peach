@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,10 +66,23 @@ export function MediaPairCard({
 
   return (
     <li className="overflow-hidden rounded-xl border border-line bg-brand-card">
-      <div className="grid grid-cols-2 gap-px bg-line">
-        <PairThumb side="before" path={pair.before.path} alt={pair.before.alt} priority={priority} />
-        <PairThumb side="after" path={pair.after.path} alt={pair.after.alt} priority={priority} />
+      {/* Before/After split with center divider handle */}
+      <div className="relative flex">
+        <div className="min-w-0 flex-1">
+          <PairThumb side="before" path={pair.before.path} alt={pair.before.alt} priority={priority} />
+        </div>
+        {/* Center divider + handle */}
+        <div className="absolute inset-y-0 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center">
+          <div className="w-px flex-1 bg-white/55" />
+          <div className="size-5 shrink-0 rounded-full border border-line bg-white/90 shadow-sm" />
+          <div className="w-px flex-1 bg-white/55" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <PairThumb side="after" path={pair.after.path} alt={pair.after.alt} priority={priority} />
+        </div>
       </div>
+
+      {/* Label + actions */}
       <div className="space-y-2 p-3">
         {editing ? (
           <div className="space-y-1.5">
@@ -77,7 +91,7 @@ export function MediaPairCard({
               maxLength={180}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="ป้ายกำกับ pair (เช่น: ห้องครัว — ก่อน/หลัง)"
-              className="h-7 text-xs"
+              className="h-7 rounded-lg text-xs"
             />
             <div className="flex gap-1.5">
               <Button size="xs" onClick={handleSave} disabled={pending}>
@@ -97,31 +111,26 @@ export function MediaPairCard({
             </div>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="block w-full text-left text-sm text-ink"
-          >
-            {pair.label || <em className="text-muted-brand">— ตั้งป้าย —</em>}
-          </button>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="flex-1 truncate text-left text-sm font-medium text-ink"
+            >
+              {pair.label || <em className="font-normal text-muted-brand">— ตั้งป้าย —</em>}
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={pending}
+              aria-label="ลบ pair"
+              aria-busy={pending}
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-brand transition hover:bg-danger/10 hover:text-danger disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50"
+            >
+              {pending ? <Spinner className="size-3" /> : <Trash2 size={13} aria-hidden />}
+            </button>
+          </div>
         )}
-        <Button
-          size="xs"
-          variant="destructive"
-          onClick={handleDelete}
-          disabled={pending}
-          aria-busy={pending}
-          className="w-full"
-        >
-          {pending ? (
-            <>
-              <Spinner className="size-3" />
-              <span>กำลังลบ…</span>
-            </>
-          ) : (
-            'ลบ pair'
-          )}
-        </Button>
       </div>
     </li>
   );
@@ -138,6 +147,7 @@ function PairThumb({
   alt: string;
   priority?: boolean;
 }) {
+  const sideLabel = side === 'before' ? 'ก่อน' : 'หลัง';
   return (
     <div className="relative aspect-[4/3] bg-bg2">
       <Image
@@ -149,8 +159,8 @@ function PairThumb({
         priority={priority}
         unoptimized
       />
-      <span className="absolute left-1.5 top-1.5 rounded bg-ink/85 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-bg">
-        {side}
+      <span className="absolute left-1.5 top-1.5 rounded-md bg-ink/80 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-bg">
+        {sideLabel}
       </span>
     </div>
   );

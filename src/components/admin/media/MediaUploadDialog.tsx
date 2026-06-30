@@ -213,15 +213,15 @@ export function MediaUploadDialog({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="อัปโหลดรูป"
-        className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 px-4 py-8"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 px-4 py-8 backdrop-blur-sm"
       >
-        <div className="flex max-h-full w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-brand-card shadow-xl">
+        <div className="flex max-h-full w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-line bg-bg shadow-xl">
           <header className="flex items-center justify-between border-b border-line px-5 py-3">
             <h2 className="text-base font-medium text-ink">อัปโหลดรูปเข้า library</h2>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md p-1 text-muted-brand hover:text-ink"
+              className="rounded-lg p-1.5 text-muted-brand transition hover:bg-bg2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
               aria-label="ปิด"
             >
               ✕
@@ -237,7 +237,7 @@ export function MediaUploadDialog({ onClose }: { onClose: () => void }) {
                 e.preventDefault();
                 addFiles(e.dataTransfer.files);
               }}
-              className="flex w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-line bg-bg/40 px-6 py-10 text-center text-sm text-muted-brand hover:border-brand-accent hover:text-ink"
+              className="flex w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-line bg-bg2/30 px-6 py-10 text-center text-sm text-muted-brand transition hover:border-brand-accent hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
             >
               <span className="text-base">คลิกเพื่อเลือกไฟล์ หรือลากไฟล์มาวาง</span>
               <span className="text-xs">jpg / png / webp — สูงสุดไฟล์ละ 5MB</span>
@@ -251,13 +251,13 @@ export function MediaUploadDialog({ onClose }: { onClose: () => void }) {
               className="hidden"
             />
 
-            <div className="space-y-2 rounded-lg border border-line bg-bg/40 p-3">
+            <div className="space-y-2 rounded-xl border border-line bg-bg2/30 p-3">
               <label className="flex items-center gap-2 text-sm text-ink">
                 <input
                   type="checkbox"
                   checked={pairMode}
                   onChange={(e) => setPairMode(e.target.checked)}
-                  className="h-4 w-4"
+                  className="h-4 w-4 accent-ink"
                 />
                 จับคู่ before/after (ต้องอัปโหลด 2 ไฟล์: ไฟล์แรก = before, ไฟล์สอง = after)
               </label>
@@ -272,9 +272,10 @@ export function MediaUploadDialog({ onClose }: { onClose: () => void }) {
                     maxLength={180}
                     onChange={(e) => setPairLabel(e.target.value)}
                     placeholder="เช่น: ห้องครัว — ก่อน/หลังแต่ง"
+                    className="rounded-xl border-line bg-brand-card"
                   />
                   {!pairAllowed && activeRows.length > 0 && (
-                    <p className="text-xs text-destructive">
+                    <p className="text-xs text-danger">
                       pair mode ต้องการ 2 ไฟล์พอดี (ตอนนี้มี {activeRows.length})
                     </p>
                   )}
@@ -301,14 +302,16 @@ export function MediaUploadDialog({ onClose }: { onClose: () => void }) {
             )}
           </div>
 
-          <footer className="flex items-center justify-end gap-2 border-t border-line bg-bg/30 px-5 py-3">
+          <footer className="flex items-center justify-end gap-2 border-t border-line bg-bg2/20 px-5 py-3">
             <Button variant="ghost" onClick={onClose} disabled={submitting}>
               ปิด
             </Button>
-            <Button
+            <button
+              type="button"
               onClick={handleSubmit}
               disabled={submitDisabled}
               aria-busy={submitting}
+              className="inline-flex items-center gap-2 rounded-xl bg-ink px-5 py-2 text-sm font-medium text-bg transition hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
             >
               {submitting ? (
                 <>
@@ -320,7 +323,7 @@ export function MediaUploadDialog({ onClose }: { onClose: () => void }) {
               ) : (
                 'อัปโหลด'
               )}
-            </Button>
+            </button>
           </footer>
         </div>
       </div>
@@ -382,12 +385,12 @@ function RowItem({
   return (
     <li
       className={
-        'rounded-lg border border-line bg-bg/30 p-3 ' +
+        'rounded-xl border border-line bg-bg2/20 p-3 ' +
         (isRejected ? 'opacity-70' : '')
       }
     >
       <div className="flex items-start gap-3">
-        <span className="mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ink/85 text-[11px] text-bg">
+        <span className="mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ink text-[11px] text-bg">
           {pairMode ? (index === 0 ? 'B' : 'A') : index + 1}
         </span>
 
@@ -398,7 +401,7 @@ function RowItem({
             disabled={cropDisabled}
             aria-label={isCropped ? 'ครอปอีกครั้ง' : 'ครอปรูป'}
             className={
-              'group/thumb relative h-20 w-28 shrink-0 overflow-hidden rounded-md ring-1 ring-line ' +
+              'group/thumb relative h-20 w-28 shrink-0 overflow-hidden rounded-lg ring-1 ring-line ' +
               (cropDisabled
                 ? 'cursor-default'
                 : 'cursor-pointer transition hover:ring-brand-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent')
@@ -412,7 +415,7 @@ function RowItem({
               draggable={false}
             />
             {isCropped && (
-              <span className="absolute left-1 top-1 rounded bg-ink/85 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-bg">
+              <span className="absolute left-1 top-1 rounded-md bg-ink/85 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-bg">
                 cropped
               </span>
             )}
@@ -426,13 +429,13 @@ function RowItem({
             )}
           </button>
         ) : (
-          <div className="grid h-20 w-28 shrink-0 place-items-center rounded-md bg-bg2/60 text-[10px] text-muted-brand">
+          <div className="grid h-20 w-28 shrink-0 place-items-center rounded-lg bg-bg2 text-[10px] text-muted-brand">
             ไฟล์ไม่รองรับ
           </div>
         )}
 
         <div className="grow space-y-1.5">
-          <p className="truncate text-sm text-ink">{row.file.name}</p>
+          <p className="truncate text-sm font-medium text-ink">{row.file.name}</p>
 
           {!isRejected && (
             <>
@@ -441,7 +444,7 @@ function RowItem({
                 maxLength={180}
                 onChange={(e) => onChangeTitle(e.target.value)}
                 placeholder="ชื่อรูป"
-                className="h-7 text-xs"
+                className="h-7 rounded-lg text-xs"
                 disabled={isUploading || isDone}
               />
               <Input
@@ -449,7 +452,7 @@ function RowItem({
                 maxLength={255}
                 onChange={(e) => onChangeAlt(e.target.value)}
                 placeholder="alt (สำหรับ SEO + screen reader)"
-                className="h-7 text-xs"
+                className="h-7 rounded-lg text-xs"
                 disabled={isUploading || isDone}
               />
 
@@ -487,7 +490,7 @@ function RowItem({
           type="button"
           onClick={onRemove}
           disabled={isUploading}
-          className="text-xs text-muted-brand hover:text-destructive"
+          className="text-xs text-muted-brand transition hover:text-danger disabled:opacity-50"
           aria-label="ลบจากรายการ"
         >
           ลบ
@@ -513,9 +516,9 @@ function StatusBadge({
       </span>
     );
   if (status === 'error')
-    return <span className="text-destructive">✗ {error ?? 'อัปโหลดล้มเหลว'}</span>;
+    return <span className="text-danger">✗ {error ?? 'อัปโหลดล้มเหลว'}</span>;
   if (status === 'rejected')
-    return <span className="text-destructive">✗ {error ?? 'ไฟล์ไม่รองรับ'}</span>;
+    return <span className="text-danger">✗ {error ?? 'ไฟล์ไม่รองรับ'}</span>;
   if (status === 'cropped')
     return <span className="text-brand-accent">✓ ครอปแล้ว · พร้อมอัปโหลด</span>;
   return <span className="text-muted-brand">รอ</span>;

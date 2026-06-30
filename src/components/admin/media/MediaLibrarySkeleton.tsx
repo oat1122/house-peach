@@ -15,29 +15,29 @@ export function MediaLibrarySkeleton({
 }) {
   return (
     <section
-      className="w-full space-y-6 px-4 py-6 lg:px-6 lg:py-8"
+      className="w-full space-y-5 px-4 py-6 lg:px-6 lg:py-8"
       aria-busy="true"
       aria-label="กำลังโหลด media library"
     >
+      {/* Header */}
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-2">
-          <Skeleton className="h-7 w-40 rounded" />
+          <Skeleton className="h-9 w-48 rounded" />
           <Skeleton className="h-4 w-72 rounded" />
         </div>
-        <Skeleton className="h-9 w-32 rounded-md" />
+        <Skeleton className="h-10 w-36 rounded-xl" />
       </header>
 
-      {/* Search bar shape — input + submit */}
-      <Skeleton className="h-8 w-full max-w-xl rounded-lg" />
-
-      {/* Tabs */}
-      <div className="flex gap-3 border-b border-line pb-2">
-        <Skeleton className="h-5 w-32 rounded" />
-        <Skeleton className="h-5 w-24 rounded" />
+      {/* Tabs + Search row */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Pill tab track */}
+        <Skeleton className="h-9 w-52 rounded-xl" />
+        {/* Search */}
+        <Skeleton className="h-9 flex-1 min-w-48 max-w-xl rounded-xl" />
       </div>
 
       {/* Grid */}
-      <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+      <ul className="grid grid-cols-[repeat(auto-fill,minmax(186px,1fr))] gap-3.5">
         {Array.from({ length: cardCount }).map((_, i) => (
           <MediaAssetCardSkeleton key={i} />
         ))}
@@ -47,38 +47,47 @@ export function MediaLibrarySkeleton({
 }
 
 /**
- * Matches `MediaAssetCard` — 4:3 thumb + title + alt + meta row + delete bar.
+ * Matches `MediaAssetCard` — 140px thumb + title + dimensions + icon row.
  */
 export function MediaAssetCardSkeleton() {
   return (
     <li className="overflow-hidden rounded-xl border border-line bg-brand-card">
-      <Skeleton className="aspect-[4/3] w-full rounded-none" />
+      <Skeleton className="h-[140px] w-full rounded-none" />
       <div className="space-y-2 p-3">
         <Skeleton className="h-4 w-3/4 rounded" />
+        <Skeleton className="h-3 w-20 rounded" />
         <Skeleton className="h-3 w-full rounded" />
-        <div className="flex justify-between">
-          <Skeleton className="h-3 w-16 rounded" />
+        <div className="flex items-center justify-between">
           <Skeleton className="h-3 w-24 rounded" />
+          <div className="flex gap-0.5">
+            <Skeleton className="h-7 w-7 rounded-md" />
+            <Skeleton className="h-7 w-7 rounded-md" />
+          </div>
         </div>
-        <Skeleton className="h-7 w-full rounded-md" />
       </div>
     </li>
   );
 }
 
 /**
- * Matches `MediaPairCard` — two 4:3 thumbs side by side + label + delete.
+ * Matches `MediaPairCard` — two 4:3 thumbs side by side + label + delete icon.
  */
 export function MediaPairCardSkeleton() {
   return (
     <li className="overflow-hidden rounded-xl border border-line bg-brand-card">
-      <div className="grid grid-cols-2 gap-px bg-line">
-        <Skeleton className="aspect-[4/3] rounded-none" />
-        <Skeleton className="aspect-[4/3] rounded-none" />
+      <div className="relative flex">
+        <div className="flex-1">
+          <Skeleton className="aspect-[4/3] rounded-none" />
+        </div>
+        <div className="flex-1">
+          <Skeleton className="aspect-[4/3] rounded-none" />
+        </div>
       </div>
-      <div className="space-y-2 p-3">
-        <Skeleton className="h-4 w-2/3 rounded" />
-        <Skeleton className="h-7 w-full rounded-md" />
+      <div className="p-3">
+        <div className="flex items-center justify-between gap-2">
+          <Skeleton className="h-4 w-2/3 rounded" />
+          <Skeleton className="h-7 w-7 rounded-md" />
+        </div>
       </div>
     </li>
   );

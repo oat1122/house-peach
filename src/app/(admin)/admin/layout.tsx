@@ -9,6 +9,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { auth } from '@/lib/auth';
+import { getAdminNavCounts } from '@/lib/services/dashboard';
 
 export const metadata: Metadata = {
   title: { template: '%s — house-peach admin', default: 'house-peach admin' },
@@ -40,6 +41,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     email: session?.user?.email ?? null,
     role: session?.user?.role ?? 'editor',
   };
+  const navCounts = await getAdminNavCounts();
 
   return (
     <TooltipProvider delay={120}>
@@ -54,7 +56,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </a>
 
         <SidebarProvider defaultOpen={sidebarOpen}>
-          <AdminSidebar user={user} />
+          <AdminSidebar user={user} counts={navCounts} />
           <SidebarInset>
             <AdminTopbar />
             <main

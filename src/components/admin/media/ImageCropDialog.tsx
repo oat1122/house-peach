@@ -240,7 +240,7 @@ function CropCanvasContent({
 }) {
   if (isPreparing || !previewStyle || !imageMetrics) {
     return (
-      <div className="flex h-full items-center justify-center text-muted-foreground">
+      <div className="flex h-full items-center justify-center text-muted-brand">
         <Loader2 className="size-6 animate-spin" />
       </div>
     );
@@ -283,8 +283,8 @@ function CropCanvas(props: CropCanvasProps) {
       aria-label="กรอบครอป — ลากด้วยเมาส์ หรือใช้ลูกศรเลื่อน, +/− ซูม"
       tabIndex={0}
       className={cn(
-        'relative overflow-hidden rounded-2xl border border-border bg-muted shadow-inner touch-none outline-none',
-        'focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:border-ring',
+        'relative overflow-hidden rounded-2xl border border-line bg-bg2 shadow-inner touch-none outline-none',
+        'focus-visible:ring-3 focus-visible:ring-brand-accent/50 focus-visible:border-brand-accent',
         dragState ? 'cursor-grabbing' : 'cursor-grab',
       )}
       style={previewViewport}
@@ -311,13 +311,13 @@ function ZoomControl({
   onChange: (zoom: number) => void;
 }) {
   return (
-    <div className="space-y-3 rounded-xl border border-border bg-background/60 p-4">
+    <div className="space-y-3 rounded-xl border border-line bg-bg/60 p-4">
       <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-foreground">Zoom</span>
-        <span className="text-muted-foreground">{zoom?.toFixed(2)}x</span>
+        <span className="font-medium text-ink">Zoom</span>
+        <span className="text-muted-brand">{zoom?.toFixed(2)}x</span>
       </div>
       <div className="flex items-center gap-3">
-        <ZoomOut className="size-4 text-muted-foreground" aria-hidden />
+        <ZoomOut className="size-4 text-muted-brand" aria-hidden />
         <input
           type="range"
           min="1"
@@ -325,10 +325,10 @@ function ZoomControl({
           step="0.05"
           value={zoom ?? 1}
           onChange={(event) => onChange(Number(event.target.value))}
-          className="flex-1 accent-primary"
+          className="flex-1 accent-ink"
           aria-label="ระดับซูม"
         />
-        <ZoomIn className="size-4 text-muted-foreground" aria-hidden />
+        <ZoomIn className="size-4 text-muted-brand" aria-hidden />
       </div>
     </div>
   );
@@ -355,16 +355,16 @@ function CropSidebar({
 }) {
   return (
     <div className="w-full max-w-sm space-y-5">
-      <div className="rounded-xl border border-border bg-muted/30 p-4">
-        <p className="text-sm font-semibold text-foreground">ผลลัพธ์ที่จะได้</p>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <div className="rounded-xl border border-line bg-bg2/50 p-4">
+        <p className="text-sm font-semibold text-ink">ผลลัพธ์ที่จะได้</p>
+        <p className="mt-1 text-sm text-muted-brand">
           รูปปลายทาง {sizeLabel} อัตราส่วน {ratioLabel} · บันทึกเป็น WEBP
         </p>
       </div>
 
       <ZoomControl zoom={crop?.zoom} onChange={onZoomChange} />
 
-      <div className="rounded-xl border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
+      <div className="rounded-xl border border-line bg-bg2/30 p-4 text-sm text-muted-brand">
         <p>คำแนะนำ</p>
         <p className="mt-1">
           รูปต้นฉบับควรใหญ่พอสำหรับสัดส่วนที่เลือก เพื่อให้ภาพหลังครอปยังคมชัด
@@ -375,10 +375,15 @@ function CropSidebar({
         <Button variant="outline" onClick={onCancel} disabled={isSaving}>
           ยกเลิก
         </Button>
-        <Button onClick={onConfirm} disabled={isPreparing || isSaving}>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={isPreparing || isSaving}
+          className="inline-flex items-center gap-2 rounded-xl bg-ink px-5 py-2 text-sm font-medium text-bg transition hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
+        >
           {isSaving ? <Loader2 className="size-4 animate-spin" /> : null}
           ใช้รูปนี้
-        </Button>
+        </button>
       </div>
     </div>
   );
@@ -638,11 +643,11 @@ function ImageCropHeading({
 }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+      <div className="flex items-center gap-2 text-sm font-semibold text-ink">
         <Crop className="size-4" />
         ครอปรูปก่อนใช้งาน
       </div>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-brand">
         เลื่อนภาพเพื่อเลือกตำแหน่งที่ต้องการแสดง · ผลลัพธ์ {sizeLabel} อัตราส่วน {ratioLabel}
       </p>
     </div>
@@ -684,7 +689,7 @@ function CropCanvasWithHint(
         onPointerEnd={drag.handlePointerEnd}
         onKeyDown={onKeyDown}
       />
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-[11px] text-muted-brand">
         ลากเมาส์เพื่อเลื่อน · โฟกัสกรอบแล้วใช้ลูกศรเลื่อน (Shift = ก้าวใหญ่), +/− ซูม, 0 รีเซ็ต
       </p>
     </div>
@@ -711,14 +716,14 @@ function ImageCropDialogMain(
     <div className="flex-1 space-y-4">
       <ImageCropHeading sizeLabel={props.sizeLabel} ratioLabel={props.ratioLabel} />
       <div className="space-y-1.5">
-        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-brand">
           สัดส่วน
         </p>
         {props.aspectButtons}
       </div>
       {props.errorMessage ? (
         <p
-          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger"
           role="alert"
         >
           {props.errorMessage}
@@ -739,7 +744,7 @@ function ImageCropDialogMain(
 
 function ImageCropDialogBody(props: ImageCropDialogBodyProps) {
   return (
-    <div className="relative z-10 flex w-full max-w-4xl flex-col gap-5 rounded-2xl border border-border bg-card p-6 shadow-2xl lg:flex-row">
+    <div className="relative z-10 flex w-full max-w-4xl flex-col gap-5 rounded-2xl border border-line bg-bg p-6 shadow-xl lg:flex-row">
       <ImageCropDialogMain
         sizeLabel={props.sizeLabel}
         ratioLabel={props.ratioLabel}
@@ -877,12 +882,12 @@ function AspectButtons({
             disabled={disabled}
             onClick={() => onChange(p.id)}
             className={cn(
-              'h-8 rounded-md border px-3 text-xs font-medium transition outline-none',
-              'focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:border-ring',
+              'h-8 rounded-lg border px-3 text-xs font-medium transition outline-none',
+              'focus-visible:ring-3 focus-visible:ring-brand-accent/50 focus-visible:border-brand-accent',
               'disabled:pointer-events-none disabled:opacity-50',
               active
-                ? 'border-foreground bg-foreground text-background'
-                : 'border-border bg-background text-foreground hover:bg-muted',
+                ? 'border-ink bg-ink text-bg'
+                : 'border-line bg-bg2 text-ink hover:bg-bg',
             )}
           >
             {p.label}
@@ -953,7 +958,7 @@ export function ImageCropDialog({
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
     >
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-ink/55 backdrop-blur-sm"
         onClick={onCancel}
       />
       <ImageCropDialogBody

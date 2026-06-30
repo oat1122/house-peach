@@ -83,6 +83,7 @@ export function PostForm({
   mode,
   defaultValues,
   tagOptions,
+  categoryOptions,
   libraryAssets,
   authorName,
   coverAssetCache,
@@ -90,6 +91,7 @@ export function PostForm({
   mode: 'new' | 'edit';
   defaultValues?: DefaultValues;
   tagOptions: TagOption[];
+  categoryOptions: { id: number; name: string }[];
   libraryAssets: PickerAsset[];
   /** Author display name for the SEO preview. The action takes the author id
    *  from session — never from this prop. */
@@ -117,6 +119,7 @@ export function PostForm({
     body: defaultValues?.body ?? EMPTY_TIPTAP_DOC,
     tagIds: defaultValues?.tagIds ?? [],
     coverMediaAssetId: defaultValues?.coverMediaAssetId ?? null,
+    categoryId: defaultValues?.categoryId ?? null,
     status: defaultValues?.status ?? 'draft',
     publishedAt: defaultValues?.publishedAt ?? null,
   };
@@ -434,6 +437,56 @@ export function PostForm({
                     );
                   })}
                 </div>
+              )}
+            </Section>
+
+            <Section
+              title="หมวดหมู่"
+              description="เลือกได้ 1 หมวด (ไม่บังคับ) — ต่างจากแท็กที่เลือกได้หลายอัน"
+            >
+              {categoryOptions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  ยังไม่มีหมวดหมู่สำหรับ post — เพิ่มจาก{' '}
+                  <a href="/admin/categories" className="underline">
+                    /admin/categories
+                  </a>
+                </p>
+              ) : (
+                <Controller
+                  control={control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value == null ? 'none' : String(field.value)}
+                      onValueChange={(v) =>
+                        field.onChange(v === 'none' ? null : Number(v))
+                      }
+                    >
+                      <SelectTrigger
+                        aria-label="หมวดหมู่"
+                        className="max-w-xs"
+                      >
+                        <SelectValue placeholder="เลือกหมวดหมู่">
+                          {(v) => {
+                            if (!v || v === 'none') return '— ไม่มีหมวดหมู่ —';
+                            return (
+                              categoryOptions.find((c) => String(c.id) === v)
+                                ?.name ?? 'เลือกหมวดหมู่'
+                            );
+                          }}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— ไม่มีหมวดหมู่ —</SelectItem>
+                        {categoryOptions.map((c) => (
+                          <SelectItem key={c.id} value={String(c.id)}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               )}
             </Section>
           </TabsContent>

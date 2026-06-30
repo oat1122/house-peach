@@ -449,6 +449,7 @@ export async function createPost(
         excerpt: input.excerpt,
         body: input.body,
         coverMediaAssetId: input.coverMediaAssetId ?? null,
+        categoryId: input.categoryId ?? null,
         status: input.status,
         publishedAt:
           input.status === 'published'
@@ -501,6 +502,8 @@ export async function updatePost(input: PostUpdate): Promise<void> {
       }
       if (input.coverMediaAssetId !== undefined)
         set.coverMediaAssetId = input.coverMediaAssetId ?? null;
+      if (input.categoryId !== undefined)
+        set.categoryId = input.categoryId ?? null;
       if (input.status !== undefined) {
         set.status = input.status;
         if (input.status === 'published') {
@@ -551,6 +554,31 @@ export async function deletePost(id: number): Promise<void> {
   bumpTag(cacheTags.posts);
   bumpTag(cacheTags.post(id));
   bumpTag(cacheTags.sitemap);
+}
+
+/** Bulk status change in one UPDATE, then per-row cache bust. */
+export async function bulkSetPostStatus(
+  ids: number[],
+  status: ContentStatus,
+): Promise<void> {
+  if (ids.length === 0) return;
+  const set: Record<string, unknown> = { status };
+  if (status === 'published') {
+    set.publishedAt = sql`COALESCE(${posts.publishedAt}, NOW())`;
+  }
+  await db.update(posts).set(set).where(inArray(posts.id, ids));
+  bumpTag(cacheTags.posts);
+  bumpTag(cacheTags.sitemap);
+  for (const id of ids) bumpTag(cacheTags.post(id));
+}
+
+/** Bulk hard delete (FK CASCADE cleans junctions), then per-row cache bust. */
+export async function bulkDeletePosts(ids: number[]): Promise<void> {
+  if (ids.length === 0) return;
+  await db.delete(posts).where(inArray(posts.id, ids));
+  bumpTag(cacheTags.posts);
+  bumpTag(cacheTags.sitemap);
+  for (const id of ids) bumpTag(cacheTags.post(id));
 }
 
 async function ensurePostTagsExist(
